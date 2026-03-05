@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Sheet — Your Name</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --parchment:  #f2e8d0;
+      --parchment2: #e8d9b8;
+      --parchment3: #ddd0b0;
+      --ink:        #1a0a00;
+      --ink-mid:    #3d2b1a;
+      --muted:      #7a5c3a;
+      --border:     #8b6914;
+      --border-lt:  #c9a84c;
+      --red:        #8b1a1a;
+      --red-lt:     #b22222;
+      --green:      #1a5c1a;
+      --box-bg:     rgba(255, 255, 255, 0.35);
+      --font-head:  'Cinzel', Georgia, serif;
+      --font-title: 'Cinzel Decorative', Georgia, serif;
+      --font-body:  'Crimson Text', Georgia, serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: radial-gradient(ellipse at center, #2c1810 0%, #0e0603 100%);
+      min-height: 100vh;
+      padding: 1.5rem;
+      font-family: var(--font-body);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ─── Sheet wrapper ──────────────────────────────────────── */
+    .sheet {
+      max-width: 1120px;
+      margin: 0 auto;
+      background: var(--parchment);
+      border: 3px solid var(--border);
+      position: relative;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), inset 0 0 60px rgba(0,0,0,0.04);
+    }
+
+    /* Inner decorative border frame */
+    .sheet::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px solid var(--border-lt);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* All direct children sit above the border pseudo-element */
+    .sheet > * { position: relative; z-index: 1; }
+
+    /* ─── Shared: field label ────────────────────────────────── */
+    .field-label {
+      font-family: var(--font-head);
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* ─── Shared: box ────────────────────────────────────────── */
+    .box {
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      background: var(--box-bg);
+      padding: 8px 10px;
+      margin-bottom: 10px;
+    }
+    .box:last-child { margin-bottom: 0; }
+
+    .box-title {
+      font-family: var(--font-head);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      text-align: center;
+      border-bottom: 1px solid var(--border-lt);
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────── */
+    .sheet-header {
+      background: var(--parchment2);
+      border-bottom: 2px solid var(--border);
+      padding: 14px 20px 12px;
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .header-name { flex-shrink: 0; }
+
+    .char-name {
+      font-family: var(--font-title);
+      font-size: clamp(1.5rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: var(--red);
+      line-height: 1.1;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 3px;
+      min-width: 180px;
+    }
+    /* Replace placeholder instructions are hidden visually but readable in source */
+
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      flex: 1;
+    }
+
+    .meta-field { display: flex; flex-direction: column; }
+    .meta-val {
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-lt);
+      min-width: 110px;
+      padding-bottom: 2px;
+    }
+
+    /* ─── Body: 3-column grid ────────────────────────────────── */
+    .sheet-body {
+      display: grid;
+      grid-template-columns: 185px 1fr 265px;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    /* ─── Ability Scores ─────────────────────────────────────── */
+    .abilities {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .ability {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      padding: 5px 4px 6px;
+      background: rgba(255, 255, 255, 0.55);
+      text-align: center;
+    }
+
+    .ability-abbr {
+      font-family: var(--font-head);
+      font-size: 0.56rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--red);
+      margin-bottom: 3px;
+    }
+
+    .ability-mod {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head);
+      font-size: 1.05rem;
+      font-weight: 700;
+      background: #fff;
+      margin-bottom: 3px;
+    }
+
+    .ability-score {
+      font-family: var(--font-head);
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .ability-tag {
+      font-size: 0.5rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    /* ─── Core Stats row ─────────────────────────────────────── */
+    .core-stats {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .core-stat {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.55);
+      text-align: center;
+      padding: 5px 2px;
+    }
+
+    .cs-val {
+      font-family: var(--font-head);
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .cs-label {
+      font-family: var(--font-head);
+      font-size: 0.48rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    /* ─── Vitals ─────────────────────────────────────────────── */
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .vital {
+      border: 1.5px solid var(--border);
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.55);
+      text-align: center;
+      padding: 6px 4px;
+    }
+
+    .vital-num {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--red);
+      line-height: 1;
+    }
+
+    .vital-label {
+      font-family: var(--font-head);
+      font-size: 0.49rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    /* ─── Skill List ─────────────────────────────────────────── */
+    .skill-item {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      padding: 2px 0;
+      border-bottom: 1px dotted var(--border-lt);
+      font-size: 0.9rem;
+    }
+    .skill-item:last-child { border-bottom: none; }
+
+    .skill-dot {
+      font-size: 0.6rem;
+      color: var(--muted);
+      flex-shrink: 0;
+      width: 12px;
+      line-height: 1.6;
+    }
+    .skill-item.prof   .skill-dot { color: var(--green); }
+    .skill-item.expert .skill-dot { color: var(--red);   }
+
+    .skill-name { flex: 1; }
+    .skill-attr {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .skill-bonus {
+      font-family: var(--font-head);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--ink-mid);
+      width: 28px;
+      text-align: right;
+    }
+
+    /* ─── Backstory ──────────────────────────────────────────── */
+    .backstory p {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      margin-bottom: 0.6rem;
+    }
+    .backstory p:last-child { margin-bottom: 0; }
+
+    /* ─── Personality traits 2×2 grid ───────────────────────── */
+    .traits-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .trait-block {
+      border: 1px solid var(--border-lt);
+      border-radius: 2px;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .trait-label {
+      font-family: var(--font-head);
+      font-size: 0.56rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--red);
+      margin-bottom: 3px;
+    }
+
+    .trait-text {
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--ink-mid);
+    }
+
+    /* ─── Project / Inventory cards ──────────────────────────── */
+    .project-item {
+      border: 1px solid var(--border-lt);
+      border-radius: 2px;
+      padding: 8px 9px;
+      background: rgba(255, 255, 255, 0.4);
+      margin-bottom: 8px;
+    }
+    .project-item:last-child { margin-bottom: 0; }
+
+    .project-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 1px;
+    }
+
+    .project-name {
+      font-family: var(--font-head);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .project-rarity {
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      font-style: italic;
+      white-space: nowrap;
+    }
+    .r-common    { color: #555;    }
+    .r-uncommon  { color: #1a7c1a; }
+    .r-rare      { color: #1a4fbf; }
+    .r-very-rare { color: #6b1fbf; }
+    .r-legendary { color: #b86800; }
+
+    .project-type {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 3px;
+    }
+
+    .project-desc {
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--ink-mid);
+      margin-bottom: 5px;
+    }
+
+    .project-links { display: flex; gap: 12px; }
+
+    .proj-link {
+      font-family: var(--font-head);
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--red);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .proj-link:hover { color: var(--red-lt); }
+
+    /* ─── Features & Traits ──────────────────────────────────── */
+    .feature-item {
+      padding: 5px 0;
+      border-bottom: 1px dotted var(--border-lt);
+    }
+    .feature-item:last-child { border-bottom: none; }
+
+    .feature-name {
+      font-family: var(--font-head);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .feature-desc {
+      font-size: 0.85rem;
+      color: var(--ink-mid);
+      line-height: 1.55;
+    }
+
+    /* ─── Contact ────────────────────────────────────────────── */
+    .contact-list { display: flex; flex-direction: column; gap: 2px; }
+
+    .contact-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 4px 0;
+      border-bottom: 1px dotted var(--border-lt);
+      transition: color 0.2s;
+    }
+    .contact-link:last-child { border-bottom: none; }
+    .contact-link:hover { color: var(--red); }
+
+    .contact-icon {
+      font-size: 0.8rem;
+      font-family: var(--font-head);
+      font-weight: 700;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    /* ─── Decorative section divider ─────────────────────────── */
+    .deco-divider {
+      text-align: center;
+      color: var(--border-lt);
+      font-size: 0.75rem;
+      margin: 6px 0;
+      position: relative;
+      line-height: 1;
+    }
+    .deco-divider::before,
+    .deco-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: calc(50% - 14px);
+      height: 1px;
+      background: var(--border-lt);
+    }
+    .deco-divider::before { left: 0; }
+    .deco-divider::after  { right: 0; }
+
+    /* ─── Footer ─────────────────────────────────────────────── */
+    .sheet-footer {
+      border-top: 2px solid var(--border);
+      padding: 8px 20px;
+      background: var(--parchment2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .footer-text {
+      font-family: var(--font-head);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ─── Dice Roller ────────────────────────────────────────── */
+    .dice-section {
+      border-top: 2px solid var(--border);
+      background: var(--parchment2);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .dice-tagline {
+      font-family: var(--font-head);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* d20 shape using a decagon clip-path */
+    .d20-btn {
+      width: 72px;
+      height: 72px;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 1.5rem;
+      font-weight: 700;
+      clip-path: polygon(
+        50% 0%, 79% 9%, 100% 35%, 100% 65%,
+        79% 91%, 50% 100%, 21% 91%, 0% 65%,
+        0% 35%, 21% 9%
+      );
+      transition: background 0.15s, transform 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .d20-btn:hover  { background: var(--red-lt); transform: scale(1.08); }
+    .d20-btn:active { transform: scale(0.96); }
+    .d20-btn.rolling {
+      animation: diceRoll 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+
+    @keyframes diceRoll {
+      0%   { transform: rotate(0deg)   scale(1);    }
+      20%  { transform: rotate(144deg) scale(1.18); }
+      40%  { transform: rotate(288deg) scale(0.9);  }
+      60%  { transform: rotate(432deg) scale(1.12); }
+      80%  { transform: rotate(576deg) scale(0.95); }
+      100% { transform: rotate(720deg) scale(1);    }
+    }
+
+    .dice-result-num {
+      font-family: var(--font-head);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 12px;
+      min-height: 1.4em;
+      transition: opacity 0.2s;
+    }
+    .dice-result-num.nat20 { color: #b86800; }
+    .dice-result-num.nat1  { color: #333;    }
+
+    .dice-flavor {
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-style: italic;
+      color: var(--muted);
+      margin-top: 4px;
+      min-height: 1.4em;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sheet-body {
+        grid-template-columns: 175px 1fr;
+        grid-template-rows: auto auto;
+      }
+      .col-right {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 0.5rem; }
+      .sheet-body {
+        grid-template-columns: 1fr;
+        padding: 10px;
+        gap: 0;
+      }
+      .col-left, .col-mid, .col-right { margin-bottom: 10px; }
+      .abilities {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .traits-grid {
+        grid-template-columns: 1fr;
+      }
+      .sheet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .core-stats { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <!-- ─── Header ─────────────────────────────────────────────── -->
+  <header class="sheet-header">
+    <div class="header-name">
+      <span class="field-label">Character Name</span>
+      <!-- Replace "Your Name" with your actual name -->
+      <div class="char-name">Your Name</div>
+    </div>
+    <div class="header-meta">
+      <!-- Class & Level: your job title + years of experience -->
+      <div class="meta-field">
+        <span class="field-label">Class &amp; Level</span>
+        <span class="meta-val">Full-Stack Dev · Lv. 5</span>
+      </div>
+      <!-- Background: education or origin story -->
+      <div class="meta-field">
+        <span class="field-label">Background</span>
+        <span class="meta-val">Self-Taught</span>
+      </div>
+      <!-- Race: nationality or fun stand-in -->
+      <div class="meta-field">
+        <span class="field-label">Race</span>
+        <span class="meta-val">Human (City, Country)</span>
+      </div>
+      <!-- Alignment: your personality / work ethic archetype -->
+      <div class="meta-field">
+        <span class="field-label">Alignment</span>
+        <span class="meta-val">Chaotic Good</span>
+      </div>
+      <!-- XP: years × 1000, or just a fun number -->
+      <div class="meta-field">
+        <span class="field-label">Experience Points</span>
+        <span class="meta-val">9,999 XP</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Body ───────────────────────────────────────────────── -->
+  <div class="sheet-body">
+
+    <!-- ── Left column ────────────────────────────────────────── -->
+    <div class="col-left">
+
+      <!-- Ability Scores: map these to your personal strengths.
+           Score = 1–20 (most people are 8–16 in most stats).
+           Modifier = (score − 10) / 2, rounded down. -->
+      <div class="box">
+        <div class="box-title">Ability Scores</div>
+        <div class="abilities">
+
+          <div class="ability">
+            <div class="ability-abbr">STR</div>
+            <div class="ability-mod">+3</div>
+            <div class="ability-score">16</div>
+            <div class="ability-tag">Technical<br>Strength</div>
+          </div>
+
+          <div class="ability">
+            <div class="ability-abbr">DEX</div>
+            <div class="ability-mod">+2</div>
+            <div class="ability-score">14</div>
+            <div class="ability-tag">Agility &amp;<br>Adaptability</div>
+          </div>
+
+          <div class="ability">
+            <div class="ability-abbr">CON</div>
+            <div class="ability-mod">+3</div>
+            <div class="ability-score">16</div>
+            <div class="ability-tag">Reliability &amp;<br>Endurance</div>
+          </div>
+
+          <div class="ability">
+            <div class="ability-abbr">INT</div>
+            <div class="ability-mod">+4</div>
+            <div class="ability-score">18</div>
+            <div class="ability-tag">Learning &amp;<br>Architecture</div>
+          </div>
+
+          <div class="ability">
+            <div class="ability-abbr">WIS</div>
+            <div class="ability-mod">+2</div>
+            <div class="ability-score">14</div>
+            <div class="ability-tag">Judgement &amp;<br>Experience</div>
+          </div>
+
+          <div class="ability">
+            <div class="ability-abbr">CHA</div>
+            <div class="ability-mod">+1</div>
+            <div class="ability-score">12</div>
+            <div class="ability-tag">Communication &amp;<br>Teamwork</div>
+          </div>
+
+        </div>
+      </div><!-- /Ability Scores -->
+
+      <!-- Core combat-style stats repurposed for portfolio -->
+      <div class="core-stats">
+        <div class="core-stat">
+          <div class="cs-val">+4</div>
+          <div class="cs-label">Prof.<br>Bonus</div>
+        </div>
+        <div class="core-stat">
+          <div class="cs-val">+2</div>
+          <div class="cs-label">Initiative</div>
+        </div>
+        <div class="core-stat">
+          <div class="cs-val">18</div>
+          <div class="cs-label">Armour<br>Class</div>
+        </div>
+      </div>
+
+      <!-- Vitals: replace numbers with your real stats -->
+      <div class="box">
+        <div class="box-title">Vitals</div>
+        <div class="vitals-grid">
+          <div class="vital">
+            <div class="vital-num">XX</div>
+            <div class="vital-label">Projects<br>Shipped</div>
+          </div>
+          <div class="vital">
+            <div class="vital-num">X+</div>
+            <div class="vital-label">Years<br>Experience</div>
+          </div>
+          <div class="vital">
+            <div class="vital-num">XX</div>
+            <div class="vital-label">Happy<br>Clients</div>
+          </div>
+          <div class="vital">
+            <div class="vital-num">∞</div>
+            <div class="vital-label">Cups of<br>Coffee</div>
+          </div>
+        </div>
+      </div><!-- /Vitals -->
+
+    </div><!-- /col-left -->
+
+    <!-- ── Middle column ──────────────────────────────────────── -->
+    <div class="col-mid">
+
+      <!-- Skill Proficiencies
+           ◉ = Expert (double proficiency)
+           ● = Proficient
+           ○ = Not proficient
+           Replace skill names, ability tags, and bonus numbers. -->
+      <div class="box">
+        <div class="box-title">Skill Proficiencies</div>
+
+        <div class="skill-item expert">
+          <span class="skill-dot">◉</span>
+          <span class="skill-name">Skill One <span class="skill-attr">(INT)</span></span>
+          <span class="skill-bonus">+6</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Two <span class="skill-attr">(STR)</span></span>
+          <span class="skill-bonus">+5</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Three <span class="skill-attr">(DEX)</span></span>
+          <span class="skill-bonus">+4</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Four <span class="skill-attr">(INT)</span></span>
+          <span class="skill-bonus">+4</span>
+        </div>
+        <div class="skill-item">
+          <span class="skill-dot">○</span>
+          <span class="skill-name">Skill Five <span class="skill-attr">(DEX)</span></span>
+          <span class="skill-bonus">+1</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Six <span class="skill-attr">(CON)</span></span>
+          <span class="skill-bonus">+3</span>
+        </div>
+        <div class="skill-item">
+          <span class="skill-dot">○</span>
+          <span class="skill-name">Skill Seven <span class="skill-attr">(INT)</span></span>
+          <span class="skill-bonus">+1</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Eight <span class="skill-attr">(WIS)</span></span>
+          <span class="skill-bonus">+3</span>
+        </div>
+        <div class="skill-item prof">
+          <span class="skill-dot">●</span>
+          <span class="skill-name">Skill Nine <span class="skill-attr">(CHA)</span></span>
+          <span class="skill-bonus">+4</span>
+        </div>
+        <div class="skill-item">
+          <span class="skill-dot">○</span>
+          <span class="skill-name">Skill Ten <span class="skill-attr">(CHA)</span></span>
+          <span class="skill-bonus">+2</span>
+        </div>
+
+      </div><!-- /Skills -->
+
+      <!-- Character Background / About -->
+      <div class="box">
+        <div class="box-title">Character Background</div>
+        <div class="backstory">
+          <!-- Paragraph 1: who you are and where you're from -->
+          <p>
+            I'm <strong>Your Name</strong>, a [your role] based in <strong>City, Country</strong>.
+            I work at the intersection of [domain A] and [domain B], building things that are
+            both [quality A] and [quality B].
+          </p>
+          <!-- Paragraph 2: experience and what drives you -->
+          <p>
+            With X+ years of experience, I've shipped products used by [scale or context].
+            I care deeply about [craft / quality / impact] — and that satisfying moment when
+            everything just clicks.
+          </p>
+          <!-- Paragraph 3 (optional): outside of work / human side -->
+          <p>
+            When I'm not at my desk, you'll find me [hobby], [hobby], or down a rabbit hole
+            learning something completely unrelated to tech.
+          </p>
+        </div>
+      </div><!-- /Background -->
+
+      <!-- Personality section (the bottom of a real character sheet) -->
+      <div class="box">
+        <div class="box-title">Personality</div>
+        <div class="traits-grid">
+
+          <div class="trait-block">
+            <div class="trait-label">Personality Traits</div>
+            <!-- How you work, how you communicate -->
+            <div class="trait-text">Replace with 1–2 sentences about how you approach work or what you're like as a collaborator.</div>
+          </div>
+
+          <div class="trait-block">
+            <div class="trait-label">Ideals</div>
+            <!-- What you value: quality, simplicity, impact, open source... -->
+            <div class="trait-text">Replace with what you value most — clean code, great UX, open source, or something else.</div>
+          </div>
+
+          <div class="trait-block">
+            <div class="trait-label">Bonds</div>
+            <!-- Communities, teams, or projects you feel connected to -->
+            <div class="trait-text">Replace with the communities, teams, or projects you feel most connected to.</div>
+          </div>
+
+          <div class="trait-block">
+            <div class="trait-label">Flaws</div>
+            <!-- A touch of humour / honest self-awareness goes a long way -->
+            <div class="trait-text">Replace with an honest (or humorously self-aware) flaw. Authenticity is memorable.</div>
+          </div>
+
+        </div>
+      </div><!-- /Personality -->
+
+    </div><!-- /col-mid -->
+
+    <!-- ── Right column ───────────────────────────────────────── -->
+    <div class="col-right">
+
+      <!-- Projects styled as inventory items.
+           Rarity guide: Common · Uncommon · Rare · Very Rare · Legendary -->
+      <div class="box">
+        <div class="box-title">⚔ Inventory (Projects)</div>
+
+        <div class="project-item">
+          <div class="project-row">
+            <span class="project-name">Project Name One</span>
+            <span class="project-rarity r-rare">Rare</span>
+          </div>
+          <div class="project-type">Full-Stack · React, Node.js</div>
+          <!-- What does it do? What was your role? What makes it worth mentioning? -->
+          <div class="project-desc">A short, punchy description. What does it do, who uses it, and what made it interesting to build?</div>
+          <div class="project-links">
+            <a href="#" class="proj-link">Live Site ↗</a><!-- Replace # with real URL -->
+            <a href="#" class="proj-link">GitHub ↗</a>
+          </div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-row">
+            <span class="project-name">Project Name Two</span>
+            <span class="project-rarity r-very-rare">Very Rare</span>
+          </div>
+          <div class="project-type">Backend · Python, PostgreSQL</div>
+          <div class="project-desc">A short, punchy description. What does it do, who uses it, and what made it interesting to build?</div>
+          <div class="project-links">
+            <a href="#" class="proj-link">Live Site ↗</a>
+            <a href="#" class="proj-link">GitHub ↗</a>
+          </div>
+        </div>
+
+        <div class="project-item">
+          <div class="project-row">
+            <span class="project-name">Project Name Three</span>
+            <span class="project-rarity r-legendary">Legendary</span>
+          </div>
+          <div class="project-type">Open Source · TypeScript</div>
+          <div class="project-desc">A short, punchy description. What does it do, who uses it, and what made it interesting to build?</div>
+          <div class="project-links">
+            <a href="#" class="proj-link">Live Site ↗</a>
+            <a href="#" class="proj-link">GitHub ↗</a>
+          </div>
+        </div>
+
+        <!-- Add more project items following the same pattern -->
+
+      </div><!-- /Projects -->
+
+      <!-- Features & Traits: certifications, achievements, specialties -->
+      <div class="box">
+        <div class="box-title">Features &amp; Traits</div>
+
+        <div class="feature-item">
+          <!-- e.g. "AWS Solutions Architect — Associate" -->
+          <div class="feature-name">Achievement or Specialty One</div>
+          <div class="feature-desc">A sentence describing this certification, achievement, or area of deep expertise.</div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-name">Achievement or Specialty Two</div>
+          <div class="feature-desc">A sentence describing this certification, achievement, or area of deep expertise.</div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-name">Achievement or Specialty Three</div>
+          <div class="feature-desc">A sentence describing this certification, achievement, or area of deep expertise.</div>
+        </div>
+
+        <!-- Add more feature items as needed -->
+
+      </div><!-- /Features -->
+
+      <!-- Contact -->
+      <div class="box">
+        <div class="box-title">Contact the Adventurer</div>
+        <!-- Replace all href values and display text with your real info -->
+        <div class="contact-list">
+          <a href="mailto:hello@yourname.com" class="contact-link">
+            <span class="contact-icon">✉</span>hello@yourname.com
+          </a>
+          <a href="https://github.com/yourusername" target="_blank" rel="noopener" class="contact-link">
+            <span class="contact-icon">⌥</span>github.com/yourusername
+          </a>
+          <a href="https://linkedin.com/in/yourhandle" target="_blank" rel="noopener" class="contact-link">
+            <span class="contact-icon">in</span>linkedin.com/in/yourhandle
+          </a>
+          <a href="https://yoursite.com" target="_blank" rel="noopener" class="contact-link">
+            <span class="contact-icon">🌐</span>yoursite.com
+          </a>
+        </div>
+      </div><!-- /Contact -->
+
+    </div><!-- /col-right -->
+
+  </div><!-- /sheet-body -->
+
+  <!-- ─── Dice Roller ──────────────────────────────────────────── -->
+  <div class="dice-section">
+    <div class="dice-tagline">Roll for Initiative</div>
+    <button class="d20-btn" id="d20-btn" aria-label="Roll a d20">
+      <span id="d20-face">20</span>
+    </button>
+    <div class="dice-result-num" id="dice-result-num" aria-live="polite"></div>
+    <div class="dice-flavor"    id="dice-flavor"     aria-live="polite"></div>
+  </div>
+
+  <!-- ─── Footer ─────────────────────────────────────────────── -->
+  <footer class="sheet-footer">
+    <span class="footer-text">&copy; <span id="year"></span> Your Name &mdash; All Rights Reserved</span>
+    <span class="footer-text">🎲 May your builds always compile</span>
+  </footer>
+
+</div><!-- /sheet -->
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* ── Dice Roller ─────────────────────────────────────────── */
+  const d20Btn    = document.getElementById('d20-btn');
+  const d20Face   = document.getElementById('d20-face');
+  const resultNum = document.getElementById('dice-result-num');
+  const flavor    = document.getElementById('dice-flavor');
+
+  const FLAVOR = [
+    [1,  1,  'You rolled a 1.',         'Critical Fail — the build is on fire. Coffee spilled. Everything hurts.'],
+    [2,  5,  'You rolled a {n}.',       'Poor roll — might want to refactor that before the demo.'],
+    [6,  9,  'You rolled a {n}.',       'Mediocre — it works, but at what cost?'],
+    [10, 14, 'You rolled a {n}.',       'Decent roll — mostly bug-free. Ship with mild caution.'],
+    [15, 19, 'You rolled a {n}!',       'Great roll — merge it and go home early.'],
+    [20, 20, 'NATURAL 20!',             'Deploy straight to production. No tests needed. You are the tests.'],
+  ];
+
+  function getEntry(roll) {
+    return FLAVOR.find(([lo, hi]) => roll >= lo && roll <= hi);
+  }
+
+  d20Btn.addEventListener('click', () => {
+    if (d20Btn.classList.contains('rolling')) return;
+
+    d20Btn.classList.add('rolling');
+    resultNum.textContent = '';
+    flavor.textContent    = '';
+    resultNum.className   = 'dice-result-num';
+
+    // Scramble the face during the animation
+    let ticks = 0;
+    const scramble = setInterval(() => {
+      d20Face.textContent = Math.ceil(Math.random() * 20);
+      if (++ticks >= 14) clearInterval(scramble);
+    }, 38);
+
+    // Land on the final roll when animation ends
+    d20Btn.addEventListener('animationend', () => {
+      const roll  = Math.ceil(Math.random() * 20);
+      const entry = getEntry(roll);
+      d20Face.textContent   = roll;
+      resultNum.textContent = entry[2].replace('{n}', roll);
+      flavor.textContent    = entry[3];
+      if (roll === 20) resultNum.classList.add('nat20');
+      if (roll === 1)  resultNum.classList.add('nat1');
+      d20Btn.classList.remove('rolling');
+    }, { once: true });
+  });
+</script>
+</body>
+</html>

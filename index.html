@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Templates</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0d0d;
+      --surface:  #161616;
+      --border:   #2a2a2a;
+      --text:     #f0f0f0;
+      --muted:    #777;
+      --accent:   #f97316;
+      --radius:   14px;
+      --font:     'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── Gallery layout ──────────────────────────────────── */
+    #gallery { min-height: 100vh; padding: 5rem 2rem 6rem; }
+
+    .gallery-inner { max-width: 1200px; margin: 0 auto; }
+
+    /* ─── Header ──────────────────────────────────────────── */
+    .gallery-header { text-align: center; margin-bottom: 4rem; }
+
+    .gallery-label {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1.25rem;
+    }
+    .gallery-label::before, .gallery-label::after {
+      content: ''; display: block;
+      width: 24px; height: 1px;
+      background: var(--accent); opacity: 0.6;
+    }
+
+    .gallery-title {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 30%, #666);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gallery-sub {
+      color: var(--muted); font-size: 0.95rem;
+      max-width: 48ch; margin: 0 auto; line-height: 1.8;
+    }
+    .gallery-sub code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.82em; color: var(--accent); opacity: 0.8;
+    }
+
+    /* ─── Template grid ───────────────────────────────────── */
+    .templates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* ─── Card ────────────────────────────────────────────── */
+    .t-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .t-card:not(.coming-soon):hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+    }
+    .t-card.coming-soon { cursor: default; }
+
+    /* ─── Card preview area ───────────────────────────────── */
+    .card-preview {
+      width: 100%; aspect-ratio: 16 / 10;
+      overflow: hidden; position: relative;
+      background: #111;
+    }
+
+    /* iframe scaled to fit — scale is set by ResizeObserver in JS */
+    .card-preview iframe {
+      position: absolute; top: 0; left: 0;
+      width: 1280px; height: 800px;
+      transform-origin: top left;
+      pointer-events: none; border: none;
+    }
+
+    /* Gradient fade into card body */
+    .card-preview::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to bottom,
+        transparent 40%, rgba(22, 22, 22, 0.7) 80%, var(--surface) 100%);
+      pointer-events: none; z-index: 1;
+    }
+
+    /* Coming-soon placeholder */
+    .preview-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.75rem;
+    }
+    .placeholder-dots { display: flex; gap: 6px; }
+    .placeholder-dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor; opacity: 0.3;
+      animation: dotPulse 1.4s ease-in-out infinite;
+    }
+    .placeholder-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .placeholder-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotPulse {
+      0%, 80%, 100% { transform: scale(0.8); opacity: 0.3; }
+      40%           { transform: scale(1.2); opacity: 0.8; }
+    }
+    .placeholder-label {
+      font-size: 0.7rem; letter-spacing: 0.15em;
+      text-transform: uppercase; opacity: 0.5;
+    }
+
+    /* Launch overlay on hover — sits on .t-card (position:relative),
+       so it covers the full card, not just the preview area */
+    .card-launch {
+      position: absolute; inset: 0;
+      background: rgba(0, 0, 0, 0.58);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      z-index: 10; /* above .card-body (z-index:1) and .card-preview */
+      border-radius: var(--radius);
+    }
+    .t-card:not(.coming-soon):hover .card-launch { opacity: 1; }
+
+    .launch-btn {
+      background: var(--accent); color: #fff; border: none;
+      padding: 0.65rem 1.5rem; border-radius: 50px;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      letter-spacing: 0.02em; font-family: var(--font);
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .launch-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 32px rgba(249, 115, 22, 0.55);
+    }
+
+    /* ─── Card body ───────────────────────────────────────── */
+    .card-body { padding: 1.1rem 1.4rem 1.4rem; position: relative; z-index: 1; }
+
+    .card-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;
+    }
+
+    .card-name { font-size: 1rem; font-weight: 700; }
+
+    .coming-badge {
+      font-size: 0.64rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.2rem 0.55rem; border-radius: 50px;
+      border: 1px solid var(--border); color: var(--muted);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .card-desc {
+      color: var(--muted); font-size: 0.82rem;
+      line-height: 1.6; margin-bottom: 0.9rem;
+    }
+
+    .card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .card-tag {
+      font-size: 0.64rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.18rem 0.5rem; border-radius: 50px;
+      border: 1px solid var(--border); color: var(--muted);
+      transition: border-color 0.2s;
+    }
+    .t-card:not(.coming-soon):hover .card-tag { border-color: rgba(249, 115, 22, 0.3); }
+
+    /* ─── Viewer shell ────────────────────────────────────── */
+    #viewer {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      background: var(--bg);
+      z-index: 1000;
+    }
+    #viewer[hidden] { display: none; }
+    body.viewer-open { overflow: hidden; }
+
+    /* ─── Toolbar ─────────────────────────────────────────── */
+    #toolbar {
+      height: 48px; min-height: 48px;
+      background: rgba(10, 10, 10, 0.96);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0 1rem; z-index: 10; flex-shrink: 0;
+    }
+
+    #back-btn {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); padding: 0.28rem 0.8rem;
+      border-radius: 50px; font-size: 0.78rem; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color 0.2s, color 0.2s; font-family: var(--font);
+    }
+    #back-btn:hover { border-color: #555; color: var(--text); }
+
+    .toolbar-sep {
+      width: 1px; height: 20px;
+      background: var(--border); flex-shrink: 0;
+    }
+
+    #current-name {
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--text); white-space: nowrap; flex-shrink: 0;
+    }
+
+    .toolbar-pills {
+      display: flex; align-items: center; gap: 0.35rem;
+      overflow-x: auto; flex: 1; scrollbar-width: none; padding: 0.1rem 0;
+    }
+    .toolbar-pills::-webkit-scrollbar { display: none; }
+
+    .toolbar-pill {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); padding: 0.22rem 0.7rem;
+      border-radius: 50px; font-size: 0.73rem; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      font-family: var(--font);
+    }
+    .toolbar-pill:hover { border-color: #555; color: var(--text); }
+    .toolbar-pill.active {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+
+    #frame { flex: 1; width: 100%; border: none; display: block; }
+
+    /* ─── Responsive ──────────────────────────────────────── */
+    @media (max-width: 640px) {
+      #gallery { padding: 3rem 1rem 4rem; }
+      .gallery-header { margin-bottom: 2.5rem; }
+      #current-name, .toolbar-sep { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Gallery ───────────────────────────────────────────── -->
+<div id="gallery">
+  <div class="gallery-inner">
+    <header class="gallery-header">
+      <p class="gallery-label">Portfolio Templates</p>
+      <h1 class="gallery-title">Pick your style</h1>
+      <p class="gallery-sub">
+        Your Portfolio is a small glimpse into who you are. Which one fits your vibe?
+      </p>
+    </header>
+    <div class="templates-grid" id="templates-grid"></div>
+  </div>
+</div>
+
+<!-- ─── Viewer ────────────────────────────────────────────── -->
+<div id="viewer" hidden>
+  <div id="toolbar">
+    <button id="back-btn">&#8592; Gallery</button>
+    <div class="toolbar-sep"></div>
+    <span id="current-name"></span>
+    <div class="toolbar-pills" id="toolbar-pills"></div>
+  </div>
+  <iframe id="frame" title="Template preview" allowfullscreen></iframe>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   TEMPLATE REGISTRY
+   ─────────────────────────────────────────────────────────
+   To add a new template:
+     1. Create a folder with your index.html, e.g. My-Theme/index.html
+     2. Set available: true and fill in the path
+   ═══════════════════════════════════════════════════════════ */
+const TEMPLATES = [
+  {
+    id:        'simple-responsive',
+    name:      'Simple Responsive',
+    path:      'Simple-Responsive/index.html',
+    desc:      'Clean, minimal portfolio with scroll animations, a typewriter hero, and a warm orange accent.',
+    tags:      ['Minimal', 'Animated', 'Light'],
+    accent:    '#f97316',
+    available: true,
+  },
+  {
+    id:        'quirky-colorful',
+    name:      'Quirky Colorful',
+    path:      'Quirky-Colorful/index.html',
+    desc:      'Playful desktop-OS aesthetic with draggable windows, a colorful palette, and bold neo-brutalist card design.',
+    tags:      ['Playful', 'Colorful', 'Fun'],
+    accent:    '#FF6B9D',
+    available: true,
+  },
+  {
+    id:        'minimal-dark',
+    name:      'Minimal Dark',
+    path:      'Minimal-Dark/index.html',
+    desc:      'Sleek dark-mode portfolio with subtle glow effects, a monochrome palette, and refined micro-interactions.',
+    tags:      ['Dark', 'Minimal', 'Glow'],
+    accent:    '#6366f1',
+    available: false,
+  },
+  {
+    id:        'creative-bold',
+    name:      'Creative Bold',
+    path:      'Creative-Bold/index.html',
+    desc:      'High-contrast layout with oversized typography, asymmetric sections, and a dynamic project grid.',
+    tags:      ['Bold', 'Creative', 'Grid'],
+    accent:    '#a855f7',
+    available: false,
+  },
+  {
+    id:        'clean-classic',
+    name:      'Clean Classic',
+    path:      'Clean-Classic/index.html',
+    desc:      'Timeless two-column layout with elegant serif typography, an earth-tone palette, and generous whitespace.',
+    tags:      ['Classic', 'Serif', 'Elegant'],
+    accent:    '#14b8a6',
+    available: false,
+  },
+  {
+    id:        'fantasy-character',
+    name:      'Fantasy Character',
+    path:      'Fantasy-Character/index.html',
+    desc:      'Classic fantasy TTRPG character sheet with a funny, playful design. Roll the dice with this one!',
+    tags:      ['Funny', 'Quirky', 'Playful'],
+    accent:    '#14b8a6',
+    available: true,
+  },
+];
+
+/* ── Build gallery cards ───────────────────────────────── */
+const grid = document.getElementById('templates-grid');
+
+TEMPLATES.forEach(t => {
+  const card = document.createElement('div');
+  card.className = 't-card' + (t.available ? '' : ' coming-soon');
+  card.dataset.id = t.id;
+
+  const previewInner = t.available
+    ? `<iframe src="${t.path}" loading="lazy" scrolling="no" tabindex="-1"
+               aria-hidden="true" title="${t.name} preview"></iframe>`
+    : `<div class="preview-placeholder" style="color:${t.accent}">
+         <div class="placeholder-dots">
+           <span></span><span></span><span></span>
+         </div>
+         <span class="placeholder-label">In progress</span>
+       </div>`;
+
+  const previewBg = t.available
+    ? ''
+    : `background: linear-gradient(135deg, ${t.accent}12 0%, ${t.accent}05 100%)`;
+
+  card.innerHTML = `
+    <div class="card-preview" style="${previewBg}">
+      ${previewInner}
+    </div>
+    <div class="card-body">
+      <div class="card-row">
+        <span class="card-name">${t.name}</span>
+        ${!t.available ? '<span class="coming-badge">Coming soon</span>' : ''}
+      </div>
+      <p class="card-desc">${t.desc}</p>
+      <div class="card-tags">
+        ${t.tags.map(tag => `<span class="card-tag">${tag}</span>`).join('')}
+      </div>
+    </div>
+    ${t.available ? `<div class="card-launch"><button class="launch-btn" tabindex="-1">Open preview &rarr;</button></div>` : ''}
+  `;
+
+  if (t.available) card.addEventListener('click', () => openTemplate(t.id));
+  grid.appendChild(card);
+});
+
+/* ── Scale iframe thumbnails to fill their card preview ── */
+const ro = new ResizeObserver(entries => {
+  entries.forEach(entry => {
+    const iframe = entry.target.querySelector('iframe');
+    if (iframe) {
+      iframe.style.transform = `scale(${entry.contentRect.width / 1280})`;
+    }
+  });
+});
+document.querySelectorAll('.card-preview').forEach(el => ro.observe(el));
+
+/* ── Build toolbar pills (available templates only) ────── */
+const pillsContainer = document.getElementById('toolbar-pills');
+
+TEMPLATES.filter(t => t.available).forEach(t => {
+  const pill = document.createElement('button');
+  pill.className = 'toolbar-pill';
+  pill.dataset.id = t.id;
+  pill.textContent = t.name;
+  pill.addEventListener('click', () => openTemplate(t.id));
+  pillsContainer.appendChild(pill);
+});
+
+/* ── Viewer logic ──────────────────────────────────────── */
+const viewer      = document.getElementById('viewer');
+const frame       = document.getElementById('frame');
+const currentName = document.getElementById('current-name');
+const backBtn     = document.getElementById('back-btn');
+
+function openTemplate(id) {
+  const t = TEMPLATES.find(t => t.id === id);
+  if (!t?.available) return;
+
+  frame.src = t.path;
+  currentName.textContent = t.name;
+  document.title = t.name + ' — Portfolio Templates';
+
+  document.querySelectorAll('.toolbar-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.id === id);
+  });
+
+  viewer.hidden = false;
+  document.body.classList.add('viewer-open');
+  history.pushState({ template: id }, '', '#' + id);
+}
+
+function showGallery() {
+  viewer.hidden = true;
+  document.body.classList.remove('viewer-open');
+  frame.src = 'about:blank';
+  document.title = 'Portfolio Templates';
+  history.pushState(null, '', location.pathname);
+}
+
+backBtn.addEventListener('click', showGallery);
+
+window.addEventListener('popstate', e => {
+  if (e.state?.template) {
+    openTemplate(e.state.template);
+  } else {
+    viewer.hidden = true;
+    document.body.classList.remove('viewer-open');
+    frame.src = 'about:blank';
+  }
+});
+
+/* ── Deep-link on load ─────────────────────────────────── */
+const initHash = location.hash.slice(1);
+if (initHash) {
+  const t = TEMPLATES.find(t => t.id === initHash);
+  if (t?.available) openTemplate(t.id);
+}
+</script>
+</body>
+</html>
