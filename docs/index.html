@@ -362,7 +362,7 @@ TEMPLATES.forEach(t => {
   card.dataset.id = t.id;
 
   const previewInner = t.available
-    ? `<iframe src="${t.path}" loading="lazy" scrolling="no" tabindex="-1"
+    ? `<iframe src="${BASE_URL}${t.path}" loading="lazy" scrolling="no" tabindex="-1"
                aria-hidden="true" title="${t.name} preview"></iframe>`
     : `<div class="preview-placeholder" style="color:${t.accent}">
          <div class="placeholder-dots">
@@ -425,11 +425,18 @@ const frame       = document.getElementById('frame');
 const currentName = document.getElementById('current-name');
 const backBtn     = document.getElementById('back-btn');
 
+// Compute a stable base URL from the page's current location,
+// stripping any hash and ensuring a trailing slash.
+// This avoids broken relative paths when GitHub Pages serves
+// the page without a trailing slash (e.g. /portfolio-templates
+// instead of /portfolio-templates/).
+const BASE_URL = location.href.replace(/#.*$/, '').replace(/\/[^/]*$/, '/');
+
 function openTemplate(id) {
   const t = TEMPLATES.find(t => t.id === id);
   if (!t?.available) return;
 
-  frame.src = t.path;
+  frame.src = BASE_URL + t.path;
   currentName.textContent = t.name;
   document.title = t.name + ' — Portfolio Templates';
 
