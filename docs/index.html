@@ -353,6 +353,10 @@ const TEMPLATES = [
   },
 ];
 
+// Stable base URL — strips hash and ensures trailing slash so relative
+// template paths resolve correctly regardless of GitHub Pages trailing-slash behaviour.
+const BASE_URL = location.href.replace(/#.*$/, '').replace(/\/[^/]*$/, '/');
+
 /* ── Build gallery cards ───────────────────────────────── */
 const grid = document.getElementById('templates-grid');
 
@@ -424,13 +428,6 @@ const viewer      = document.getElementById('viewer');
 const frame       = document.getElementById('frame');
 const currentName = document.getElementById('current-name');
 const backBtn     = document.getElementById('back-btn');
-
-// Compute a stable base URL from the page's current location,
-// stripping any hash and ensuring a trailing slash.
-// This avoids broken relative paths when GitHub Pages serves
-// the page without a trailing slash (e.g. /portfolio-templates
-// instead of /portfolio-templates/).
-const BASE_URL = location.href.replace(/#.*$/, '').replace(/\/[^/]*$/, '/');
 
 function openTemplate(id) {
   const t = TEMPLATES.find(t => t.id === id);
