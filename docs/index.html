@@ -373,6 +373,23 @@
       .share-grid { grid-template-columns: 1fr; }
     }
 
+    /* ─── Footer ──────────────────────────────────────────── */
+    #footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+      font-size: 0.78rem; color: var(--muted);
+    }
+
+    #footer a {
+      color: var(--muted); text-decoration: none;
+      transition: color 0.2s;
+    }
+    #footer a:hover { color: var(--text); }
+
+    .footer-right { display: flex; align-items: center; gap: 1.25rem; }
+
     .share-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -566,6 +583,16 @@
 
   </div>
 </div>
+
+<!-- ─── Footer ───────────────────────────────────────────── -->
+<footer id="footer">
+  <span>&copy; <script>document.write(new Date().getFullYear())</script> Portfolio Templates. All templates are free to use.</span>
+  <div class="footer-right">
+    <a href="https://github.com/kicka5h/portfolio-templates" target="_blank" rel="noopener">Open Source on GitHub</a>
+    <span style="color:var(--border)">|</span>
+    <a href="https://github.com/kicka5h/portfolio-templates/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+  </div>
+</footer>
 
 <!-- ─── Viewer ────────────────────────────────────────────── -->
 <div id="viewer" hidden>
