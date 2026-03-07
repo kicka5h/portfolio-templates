@@ -28,8 +28,27 @@
       overflow-x: hidden;
     }
 
+    /* ─── Nav ─────────────────────────────────────────────── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; justify-content: center; gap: 0.5rem;
+      padding: 0.85rem 1rem;
+      background: rgba(13,13,13,0.82);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-link {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; text-decoration: none;
+      color: var(--muted); padding: 0.3rem 0.9rem;
+      border-radius: 50px; border: 1px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--border); }
+
     /* ─── Gallery layout ──────────────────────────────────── */
-    #gallery { min-height: 100vh; padding: 5rem 2rem 6rem; }
+    #gallery { min-height: 100vh; padding: 5rem 2rem 6rem; padding-top: 6.5rem; }
 
     .gallery-inner { max-width: 1200px; margin: 0 auto; }
 
@@ -263,6 +282,118 @@
 
     #frame { flex: 1; width: 100%; border: none; display: block; }
 
+    /* ─── Deploy section ──────────────────────────────────── */
+    #deploy {
+      margin-top: 6rem;
+      padding-top: 4rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .deploy-header { text-align: center; margin-bottom: 3rem; }
+
+    .deploy-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.75rem;
+    }
+
+    .deploy-sub {
+      color: var(--muted); font-size: 0.9rem; max-width: 52ch; margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 720px) {
+      .steps { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+    }
+
+    .step-num {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+
+    .step-title {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;
+    }
+
+    .step-body {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.7;
+    }
+
+    .step-body code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.88em; color: var(--accent);
+      background: rgba(249,115,22,0.08);
+      padding: 0.1em 0.4em; border-radius: 4px;
+    }
+
+    .deploy-note {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.4rem;
+      font-size: 0.84rem; color: var(--muted); line-height: 1.8;
+    }
+
+    .deploy-note strong { color: var(--text); }
+
+    .deploy-note code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.88em; color: var(--accent);
+    }
+
+    /* ─── Share section ───────────────────────────────────── */
+    #share {
+      margin-top: 6rem;
+      padding-top: 4rem;
+      padding-bottom: 6rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .share-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 720px) {
+      .share-grid { grid-template-columns: 1fr; }
+    }
+
+    .share-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .share-card:hover { border-color: #444; }
+
+    .share-icon {
+      font-size: 1.4rem; margin-bottom: 0.75rem; display: block;
+    }
+
+    .share-card-title {
+      font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;
+    }
+
+    .share-card-body {
+      font-size: 0.82rem; color: var(--muted); line-height: 1.7;
+    }
+
     /* ─── Responsive ──────────────────────────────────────── */
     @media (max-width: 640px) {
       #gallery { padding: 3rem 1rem 4rem; }
@@ -273,17 +404,166 @@
 </head>
 <body>
 
+<!-- ─── Nav ──────────────────────────────────────────────── -->
+<nav id="nav">
+  <a class="nav-link" href="#gallery">Pick It</a>
+  <a class="nav-link" href="#deploy">Ship It</a>
+  <a class="nav-link" href="#share">Share It</a>
+</nav>
+
 <!-- ─── Gallery ───────────────────────────────────────────── -->
 <div id="gallery">
   <div class="gallery-inner">
     <header class="gallery-header">
-      <p class="gallery-label">Portfolio Templates</p>
+      <p class="gallery-label">Pick It</p>
       <h1 class="gallery-title">Pick your style</h1>
       <p class="gallery-sub">
         Your Portfolio is a small glimpse into who you are. Which one fits your vibe?
       </p>
     </header>
     <div class="templates-grid" id="templates-grid"></div>
+
+    <!-- ─── Deploy instructions ─────────────────────────── -->
+    <section id="deploy">
+      <div class="deploy-header">
+        <p class="gallery-label">Ship it</p>
+        <h2 class="deploy-title">Host your portfolio free on GitHub Pages</h2>
+        <p class="deploy-sub">
+          Each template is a single <code>index.html</code> file — no build step, no server.
+          GitHub Pages will serve it for free at <code>username.github.io/repo-name</code>.
+        </p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">Step 1</div>
+          <div class="step-title">Download your template</div>
+          <div class="step-body">
+            Open a template and click the <strong>↓ Download</strong> button in the toolbar.
+            You'll get a single <code>.html</code> file with everything included.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">Step 2</div>
+          <div class="step-title">Fill in your details</div>
+          <div class="step-body">
+            Open the file in any text editor. Find the <code>const P = { … }</code> block
+            near the top and replace the placeholder content with your own name, bio,
+            skills, and projects.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">Step 3</div>
+          <div class="step-title">Create a GitHub repo</div>
+          <div class="step-body">
+            Go to <strong>github.com</strong>, sign in, and create a new repository.
+            Name it anything — e.g. <code>portfolio</code>. Leave it public
+            and don't initialise it with any files.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">Step 4</div>
+          <div class="step-title">Upload your file</div>
+          <div class="step-body">
+            Inside your new repo, click <strong>Add file → Upload files</strong>.
+            Upload your <code>.html</code> file and rename it to <code>index.html</code>
+            before committing.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">Step 5</div>
+          <div class="step-title">Enable GitHub Pages</div>
+          <div class="step-body">
+            Go to your repo's <strong>Settings → Pages</strong>. Under
+            <em>Branch</em>, select <code>main</code> and set the folder to
+            <code>/ (root)</code>. Click <strong>Save</strong>.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">Step 6</div>
+          <div class="step-title">Your site is live</div>
+          <div class="step-body">
+            After about a minute, your portfolio will be live at
+            <code>username.github.io/portfolio</code>. GitHub Pages automatically
+            redeploys whenever you push a change.
+          </div>
+        </div>
+      </div>
+
+      <p class="deploy-note">
+        <strong>Tip:</strong> Want it at <code>username.github.io</code> with no path?
+        Name your repository <code>username.github.io</code> exactly (using your real GitHub
+        username). GitHub will automatically serve it at the root of your domain.
+      </p>
+    </section>
+
+    <!-- ─── Share instructions ──────────────────────────── -->
+    <section id="share">
+      <div class="deploy-header">
+        <p class="gallery-label">Share It</p>
+        <h2 class="deploy-title">Get your portfolio in front of people</h2>
+        <p class="deploy-sub">
+          A portfolio no one sees is just a folder. Put your link everywhere.
+        </p>
+      </div>
+
+      <div class="share-grid">
+        <div class="share-card">
+          <span class="share-icon">💼</span>
+          <div class="share-card-title">LinkedIn</div>
+          <div class="share-card-body">
+            Add your portfolio URL to your LinkedIn profile under <strong>Contact info → Website</strong>.
+            Also post about it — a short "I just launched my portfolio" post gets more eyes than you'd expect.
+          </div>
+        </div>
+        <div class="share-card">
+          <span class="share-icon">🐙</span>
+          <div class="share-card-title">GitHub Profile</div>
+          <div class="share-card-body">
+            Pin your portfolio repo on your GitHub profile and add the live URL
+            to the repo's <strong>About</strong> section. Recruiters who find you on GitHub
+            will see it immediately.
+          </div>
+        </div>
+        <div class="share-card">
+          <span class="share-icon">📄</span>
+          <div class="share-card-title">Your Résumé</div>
+          <div class="share-card-body">
+            Add your portfolio URL next to your name at the top of your résumé.
+            Keep the link short — use your <code>username.github.io</code> address
+            or a free custom domain from Namecheap or Cloudflare.
+          </div>
+        </div>
+        <div class="share-card">
+          <span class="share-icon">✉️</span>
+          <div class="share-card-title">Email Signature</div>
+          <div class="share-card-body">
+            Add your portfolio link to your email signature. Every message you send
+            is a passive introduction — especially useful when cold-emailing
+            recruiters or collaborators.
+          </div>
+        </div>
+        <div class="share-card">
+          <span class="share-icon">🐦</span>
+          <div class="share-card-title">Social Media</div>
+          <div class="share-card-body">
+            Post your link on X/Twitter, Bluesky, or wherever your community lives.
+            Add it to your bio too. Communities like <strong>#buildinpublic</strong>
+            and <strong>#100DaysOfCode</strong> are especially receptive.
+          </div>
+        </div>
+        <div class="share-card">
+          <span class="share-icon">🌐</span>
+          <div class="share-card-title">Custom Domain</div>
+          <div class="share-card-body">
+            For a more professional look, point a custom domain at your GitHub Pages site.
+            Buy a domain, then add it under repo <strong>Settings → Pages → Custom domain</strong>.
+            GitHub provides free HTTPS automatically.
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
 </div>
 
