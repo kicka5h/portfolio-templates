@@ -2,7 +2,7 @@
 
 A collection of self-contained, single-file portfolio templates. Each one is a standalone `index.html` — no build step, no dependencies to install. Pick a style, fill in your details, and ship.
 
-Live gallery: **[kickash.github.io/portfolio-templates](https://kicka5h.github.io/portfolio-templates)**
+Live gallery: **[kicka5h.github.io/portfolio-templates](https://kicka5h.github.io/portfolio-templates)**
 
 ---
 
