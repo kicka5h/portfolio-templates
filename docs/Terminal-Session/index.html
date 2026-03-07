@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>portfolio — terminal</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #1e1e2e;
+      --base:   #181825;
+      --crust:  #11111b;
+      --mantle: #181825;
+      --over:   #313244;
+      --sub0:   #6c7086;
+      --sub1:   #7f849c;
+      --text:   #cdd6f4;
+      --lav:    #b4befe;
+      --blue:   #89b4fa;
+      --sky:    #89dceb;
+      --teal:   #94e2d5;
+      --green:  #a6e3a1;
+      --yellow: #f9e2af;
+      --peach:  #fab387;
+      --mauve:  #cba6f7;
+      --pink:   #f5c2e7;
+      --red:    #f38ba8;
+      --font:   'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--crust);
+      font-family: var(--font);
+    }
+
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 40% 40%, #1a1a2e 0%, #0a0a12 100%);
+    }
+
+    /* scanline overlay */
+    body::after {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom, transparent 0, transparent 3px,
+        rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px
+      );
+    }
+
+    /* ── Terminal window ──────────────────────────────── */
+    #term {
+      width: min(1120px, 97vw);
+      height: min(720px, 96vh);
+      background: var(--bg);
+      border-radius: 10px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow:
+        0 40px 90px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(255,255,255,0.07),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* ── Chrome / title bar ───────────────────────────── */
+    #chrome {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 16px;
+      background: var(--base);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    #chrome-title {
+      flex: 1; text-align: center;
+      font-size: 11.5px; color: var(--sub0); letter-spacing: 0.04em;
+    }
+    #chrome-spacer { width: 52px; }
+
+    /* ── Tab bar ──────────────────────────────────────── */
+    #tabs {
+      display: flex; align-items: stretch;
+      background: var(--base);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 0 10px; gap: 0; flex-shrink: 0;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    #tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      padding: 9px 20px; font: 11.5px/1 var(--font);
+      color: var(--sub0); border: none; background: none;
+      cursor: pointer; white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      outline: none; position: relative;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--text); }
+
+    /* ── Output area ──────────────────────────────────── */
+    #output {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 18px 28px 4px;
+      font-size: clamp(12px, 1.15vw, 14px);
+      line-height: 1.7;
+      color: var(--text);
+    }
+    #output::-webkit-scrollbar { width: 5px; }
+    #output::-webkit-scrollbar-track { background: transparent; }
+    #output::-webkit-scrollbar-thumb { background: var(--over); border-radius: 3px; }
+
+    /* ── Line types ───────────────────────────────────── */
+    .l-blank { height: 0.6em; display: block; }
+
+    .l-prompt {
+      display: flex; align-items: baseline; gap: 0;
+      color: var(--sub0); font-size: 0.88em;
+      margin-top: 14px; margin-bottom: 2px;
+      opacity: 0.65;
+    }
+    .l-prompt .pu { color: var(--green); }
+    .l-prompt .pa { color: var(--sub0); }
+    .l-prompt .ph { color: var(--blue); }
+    .l-prompt .pd { color: var(--yellow); }
+    .l-prompt .ps { color: var(--mauve); }
+
+    .l-cmd { color: var(--text); margin-bottom: 8px; padding-left: 1ch; }
+
+    .l-head {
+      font-weight: 700; letter-spacing: 0.08em;
+      color: var(--text); margin: 6px 0 4px;
+    }
+
+    .l-rule { color: var(--over); }
+
+    .l-kv {
+      display: flex; align-items: baseline; margin-bottom: 2px;
+    }
+    .l-kv .kk { color: var(--sub0); min-width: 13ch; font-size: 0.92em; }
+    .l-kv .ks { color: var(--over); padding: 0 1ch; }
+    .l-kv .kv { color: var(--text); }
+
+    .l-text { color: var(--sub1); max-width: 76ch; }
+
+    .l-skill {
+      display: flex; align-items: center;
+      gap: 2ch; margin-bottom: 3px;
+    }
+    .l-skill .sn { min-width: 15ch; color: var(--text); }
+    .l-skill .sp { color: var(--sub0); font-size: 0.85em; min-width: 4ch; }
+
+    .l-proj {
+      display: flex; align-items: baseline; gap: 1.5ch;
+      margin-bottom: 5px; cursor: pointer;
+    }
+    .l-proj:hover .pn { text-decoration: underline; text-underline-offset: 3px; }
+    .l-proj .pi { color: var(--over); min-width: 3ch; }
+    .l-proj .pn { font-weight: 700; min-width: 18ch; }
+    .l-proj .pd { color: var(--sub0); }
+
+    .l-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 4px 0 10px 4ch;
+    }
+    .tag {
+      font-size: 0.8em; padding: 2px 8px; border-radius: 4px;
+      background: rgba(203,166,247,0.12); color: var(--mauve);
+      border: 1px solid rgba(203,166,247,0.25);
+    }
+
+    .l-detail {
+      color: var(--sub1); max-width: 70ch;
+      padding: 6px 0 4px 4ch;
+      border-left: 2px solid var(--over);
+      margin: 2px 0 4px 1ch;
+    }
+
+    .l-link { color: var(--sky); }
+    .l-link a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+    .l-ok  { color: var(--green); }
+    .l-err { color: var(--red); }
+
+    .l-bigname {
+      font-weight: 700; letter-spacing: 0.04em; line-height: 1.2;
+      background: linear-gradient(135deg, var(--mauve) 0%, var(--blue) 50%, var(--sky) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Command input ────────────────────────────────── */
+    #cmdwrap {
+      display: flex; align-items: center;
+      padding: 10px 28px 14px;
+      background: var(--bg);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0; gap: 0;
+    }
+    #ps {
+      white-space: nowrap; flex-shrink: 0;
+      font-size: clamp(11px, 1.1vw, 13px);
+    }
+    #ps .pu { color: var(--green); }
+    #ps .pa { color: var(--sub0); }
+    #ps .ph { color: var(--blue); }
+    #ps .pd { color: var(--yellow); }
+    #ps .ps { color: var(--mauve); }
+
+    #inp {
+      flex: 1; font: inherit;
+      font-size: clamp(11px, 1.1vw, 13px);
+      color: var(--text); background: none;
+      border: none; outline: none;
+      caret-color: var(--mauve);
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="term">
+
+  <div id="chrome">
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <div id="chrome-title">portfolio — zsh</div>
+    <div id="chrome-spacer"></div>
+  </div>
+
+  <div id="tabs"></div>
+
+  <div id="output"></div>
+
+  <div id="cmdwrap">
+    <div id="ps">
+      <span class="pu">you</span><span class="pa">@</span><span class="ph">portfolio</span><span class="pa">:</span><span class="pd" id="psdir">~</span><span class="ps">$ </span>
+    </div>
+    <input id="inp" type="text" autocomplete="off" spellcheck="false" aria-label="command input">
+  </div>
+
+</div>
+
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════
+//  PORTFOLIO DATA  —  edit this section
+// ═══════════════════════════════════════════════════════════
+const P = {
+  name:  'Your Name',
+  role:  'Full Stack Developer',
+  loc:   'San Francisco, CA',
+  bio: [
+    'I build things for the web.',
+    'Five years crafting digital experiences',
+    'with React, Node.js, and Go.',
+    '',
+    'I care about clean code, thoughtful UX,',
+    'and shipping things that actually work.',
+  ],
+  skills: [
+    { name: 'JavaScript', pct: 90, color: 'var(--yellow)' },
+    { name: 'TypeScript', pct: 80, color: 'var(--yellow)' },
+    { name: 'React',      pct: 92, color: 'var(--sky)'    },
+    { name: 'Node.js',    pct: 82, color: 'var(--sky)'    },
+    { name: 'Python',     pct: 65, color: 'var(--green)'  },
+    { name: 'Go',         pct: 55, color: 'var(--green)'  },
+    { name: 'PostgreSQL', pct: 72, color: 'var(--blue)'   },
+    { name: 'Docker',     pct: 68, color: 'var(--blue)'   },
+    { name: 'AWS',        pct: 60, color: 'var(--peach)'  },
+  ],
+  projects: [
+    {
+      name:   'Orbit CMS',
+      desc:   'Headless CMS built in Go',
+      detail: 'A high-performance headless CMS with REST + GraphQL API, multi-tenant support, and a React admin UI. Used in production by 3 companies.',
+      tags:   ['Go', 'GraphQL', 'React', 'PostgreSQL'],
+      url:    'github.com/you/orbit-cms',
+      color:  'var(--peach)',
+    },
+    {
+      name:   'Pixel Forge',
+      desc:   'Browser-based pixel art editor',
+      detail: 'Full-featured pixel art editor built entirely in the browser. Supports layers, animation frames, palette management, and PNG/GIF export.',
+      tags:   ['TypeScript', 'Canvas API', 'IndexedDB'],
+      url:    'github.com/you/pixel-forge',
+      color:  'var(--mauve)',
+    },
+    {
+      name:   'Nova API',
+      desc:   'REST + GraphQL toolkit for Node.js',
+      detail: 'Opinionated API framework that generates REST and GraphQL endpoints from a single schema definition. Zero boilerplate, full type safety.',
+      tags:   ['Node.js', 'TypeScript', 'GraphQL', 'Zod'],
+      url:    'github.com/you/nova-api',
+      color:  'var(--green)',
+    },
+  ],
+  contact: {
+    email:    'you@example.com',
+    github:   'github.com/you',
+    linkedin: 'linkedin.com/in/you',
+    twitter:  '@you',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  SECTIONS
+// ═══════════════════════════════════════════════════════════
+const SECTION_IDS = ['home', 'about', 'skills', 'projects', 'contact'];
+const SECTION_COLORS = {
+  home:     'var(--mauve)',
+  about:    'var(--blue)',
+  skills:   'var(--green)',
+  projects: 'var(--yellow)',
+  contact:  'var(--red)',
+};
+
+let currentSection = 'home';
+let navHistory     = [];   // stack of visited section ids
+
+// ═══════════════════════════════════════════════════════════
+//  DOM REFS
+// ═══════════════════════════════════════════════════════════
+const outputEl = document.getElementById('output');
+const tabsEl   = document.getElementById('tabs');
+const inpEl    = document.getElementById('inp');
+const psDirEl  = document.getElementById('psdir');
+
+// ═══════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════
+SECTION_IDS.forEach(id => {
+  const btn = document.createElement('button');
+  btn.className   = 'tab';
+  btn.dataset.id  = id;
+  btn.textContent = id === 'home' ? '~' : id;
+  btn.addEventListener('click', () => navigate(id));
+  tabsEl.appendChild(btn);
+});
+
+function setTab(id) {
+  tabsEl.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.id === id;
+    t.classList.toggle('active', on);
+    t.style.color       = on ? SECTION_COLORS[id] : '';
+    t.style.borderColor = on ? SECTION_COLORS[id] : '';
+  });
+  psDirEl.textContent       = id === 'home' ? '~' : `~/${id}`;
+  psDirEl.style.color       = SECTION_COLORS[id];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TYPEWRITER QUEUE
+// ═══════════════════════════════════════════════════════════
+let tQueue  = [];
+let tActive = false;
+
+function enq(fn, delay = 20) {
+  tQueue.push({ fn, delay });
+  if (!tActive) drain();
+}
+
+function drain() {
+  if (!tQueue.length) { tActive = false; return; }
+  tActive = true;
+  const { fn, delay } = tQueue.shift();
+  setTimeout(() => { fn(); scroll(); drain(); }, delay);
+}
+
+function flushQueue() { tQueue = []; tActive = false; }
+
+function scroll() { outputEl.scrollTop = outputEl.scrollHeight; }
+
+// ═══════════════════════════════════════════════════════════
+//  OUTPUT HELPERS
+// ═══════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function el(tag, cls, html = '') {
+  const d = document.createElement(tag);
+  if (cls) d.className = cls;
+  d.innerHTML = html;
+  return d;
+}
+
+function addEl(e) { outputEl.appendChild(e); }
+
+function promptEl() {
+  const d = el('div', 'l-prompt');
+  const dir = psDirEl.textContent;
+  d.innerHTML =
+    `<span class="pu">${esc(P.name.split(' ')[0].toLowerCase())}</span>` +
+    `<span class="pa">@</span>` +
+    `<span class="ph">portfolio</span>` +
+    `<span class="pa">:</span>` +
+    `<span class="pd">${esc(dir)}</span>` +
+    `<span class="ps">$&nbsp;</span>`;
+  return d;
+}
+
+function cmdEl(text) {
+  return el('div', 'l-cmd', esc(text));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SECTION CONTENT BUILDERS
+// ═══════════════════════════════════════════════════════════
+function buildHome() {
+  const fontSize = `clamp(18px, 2.8vw, 38px)`;
+  return [
+    () => addEl(el('div', 'l-blank')),
+    () => {
+      const d = el('div', 'l-bigname', esc(P.name));
+      d.style.fontSize = fontSize;
+      addEl(d);
+    },
+    () => {
+      const d = el('div', 'l-text', esc(P.role));
+      d.style.color = 'var(--sub1)'; d.style.marginBottom = '4px';
+      addEl(d);
+    },
+    () => addEl(el('div', 'l-blank')),
+    () => {
+      const d = el('div', 'l-rule', '─'.repeat(50));
+      addEl(d);
+    },
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-text', 'Navigate with <span style="color:var(--mauve)">← →</span> arrow keys or type a command below.')),
+    () => addEl(el('div', 'l-blank')),
+    ...kvPairs([
+      ['about',    'bio & background',    'var(--blue)'  ],
+      ['skills',   'languages & tools',   'var(--green)' ],
+      ['projects', 'things I built',      'var(--yellow)'],
+      ['contact',  'get in touch',        'var(--red)'   ],
+    ]),
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-text', 'Type <span style="color:var(--mauve)">help</span> to see all commands.')),
+    () => addEl(el('div', 'l-blank')),
+  ];
+}
+
+function buildAbout() {
+  return [
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-head', `<span style="color:var(--blue)">~/about</span>`)),
+    () => addEl(el('div', 'l-blank')),
+    ...kvPairs([
+      ['NAME',     P.name,    'var(--text)' ],
+      ['ROLE',     P.role,    'var(--green)'],
+      ['LOCATION', P.loc,     'var(--sky)'  ],
+    ]),
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-rule', '─'.repeat(44))),
+    () => addEl(el('div', 'l-blank')),
+    ...P.bio.map(line => line
+      ? () => addEl(el('div', 'l-text', esc(line)))
+      : () => addEl(el('div', 'l-blank'))
+    ),
+    () => addEl(el('div', 'l-blank')),
+  ];
+}
+
+function buildSkills() {
+  const groups = [
+    { label: 'LANGUAGES',     names: ['JavaScript','TypeScript','Python','Go']              },
+    { label: 'FRAMEWORKS',    names: ['React','Node.js']                                    },
+    { label: 'TOOLS & INFRA', names: ['PostgreSQL','Docker','AWS']                          },
+  ];
+  const fns = [
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-head', `<span style="color:var(--green)">~/skills</span>`)),
+    () => addEl(el('div', 'l-blank')),
+  ];
+  groups.forEach(g => {
+    fns.push(
+      () => {
+        const d = el('div', 'l-head', esc(g.label));
+        d.style.color = 'var(--sub0)'; d.style.fontSize = '0.82em';
+        d.style.letterSpacing = '0.14em'; d.style.marginBottom = '6px';
+        addEl(d);
+      }
+    );
+    P.skills.filter(s => g.names.includes(s.name)).forEach(s => {
+      fns.push(() => {
+        const filled = Math.round(s.pct / 5);
+        const empty  = 20 - filled;
+        const bar    = document.createElement('span');
+        bar.innerHTML =
+          `<span style="color:${s.color}">${'█'.repeat(filled)}</span>` +
+          `<span style="color:var(--over)">${'░'.repeat(empty)}</span>`;
+        const d = el('div', 'l-skill');
+        const name = el('span', 'sn', esc(s.name));
+        const pct  = el('span', 'sp', `${s.pct}%`);
+        d.append(name, bar, pct);
+        addEl(d);
+      });
+    });
+    fns.push(() => addEl(el('div', 'l-blank')));
+  });
+  return fns;
+}
+
+function buildProjects() {
+  return [
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-head', `<span style="color:var(--yellow)">~/projects</span>`)),
+    () => addEl(el('div', 'l-blank')),
+    ...P.projects.map((p, i) => () => {
+      const d = el('div', 'l-proj');
+      const idx  = el('span', 'pi', `[${i + 1}]`);
+      const name = el('span', 'pn', esc(p.name));
+      const sep  = el('span', null, ' — ');
+      const desc = el('span', 'pd', esc(p.desc));
+      name.style.color = p.color;
+      sep.style.color  = 'var(--over)';
+      d.append(idx, name, sep, desc);
+      d.addEventListener('click', () => { inpEl.focus(); exec(`project ${i + 1}`); });
+      addEl(d);
+    }),
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-text',
+      `Click a project or type <span style="color:var(--mauve)">project 1</span> to expand.`)),
+    () => addEl(el('div', 'l-blank')),
+  ];
+}
+
+function buildContact() {
+  return [
+    () => addEl(el('div', 'l-blank')),
+    () => addEl(el('div', 'l-head', `<span style="color:var(--red)">~/contact</span>`)),
+    () => addEl(el('div', 'l-blank')),
+    ...kvPairs([
+      ['EMAIL',    P.contact.email,    'var(--red)'   ],
+      ['GITHUB',   P.contact.github,   'var(--sky)'   ],
+      ['LINKEDIN', P.contact.linkedin, 'var(--blue)'  ],
+      ['TWITTER',  P.contact.twitter,  'var(--mauve)' ],
+    ]),
+    () => addEl(el('div', 'l-blank')),
+  ];
+}
+
+// helper: key-value pair line builders
+function kvPairs(rows) {
+  return rows.map(([k, v, vc]) => () => {
+    const d    = el('div', 'l-kv');
+    const key  = el('span', 'kk', esc(k));
+    const sep  = el('span', 'ks', '│');
+    const val  = el('span', 'kv', esc(v));
+    if (vc) val.style.color = vc;
+    d.append(key, sep, val);
+    addEl(d);
+  });
+}
+
+function getSectionBuilders(id) {
+  switch (id) {
+    case 'home':     return buildHome();
+    case 'about':    return buildAbout();
+    case 'skills':   return buildSkills();
+    case 'projects': return buildProjects();
+    case 'contact':  return buildContact();
+    default:         return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATE TO SECTION
+// ═══════════════════════════════════════════════════════════
+function navigate(id, fromCmd = false, cmdText = '', pushHistory = true) {
+  if (!SECTION_IDS.includes(id)) { execUnknown(cmdText || id); return; }
+
+  flushQueue();
+  outputEl.innerHTML = '';
+
+  if (pushHistory && id !== currentSection) navHistory.push(currentSection);
+  currentSection = id;
+  setTab(id);
+
+  if (fromCmd) {
+    enq(() => addEl(promptEl()));
+    enq(() => addEl(cmdEl(cmdText || id)));
+  }
+
+  const builders = getSectionBuilders(id);
+  builders.forEach((fn, i) => enq(fn, i === 0 ? 0 : 16));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROJECT DETAIL  (inline, doesn't change section)
+// ═══════════════════════════════════════════════════════════
+function showProject(idx, cmdText) {
+  const p = P.projects[idx];
+  if (!p) { execErr(cmdText, `no project at index ${idx + 1}`); return; }
+
+  enq(() => addEl(el('div', 'l-blank')));
+  enq(() => addEl(promptEl()));
+  enq(() => addEl(cmdEl(cmdText)));
+  enq(() => addEl(el('div', 'l-blank')));
+  enq(() => {
+    const d = el('div', 'l-head', esc(p.name));
+    d.style.color = p.color; d.style.fontSize = '1.1em';
+    addEl(d);
+  });
+  enq(() => addEl(el('div', 'l-blank')));
+  enq(() => addEl(el('div', 'l-detail', esc(p.detail))));
+  enq(() => {
+    const d = el('div', 'l-tags');
+    p.tags.forEach(t => { const s = el('span', 'tag', esc(t)); d.appendChild(s); });
+    addEl(d);
+  });
+  enq(() => {
+    const d = el('div', 'l-link', `↗&nbsp; <a href="https://${esc(p.url)}" target="_blank">${esc(p.url)}</a>`);
+    d.style.paddingLeft = '4ch';
+    addEl(d);
+  });
+  enq(() => addEl(el('div', 'l-blank')));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COMMAND EXECUTOR
+// ═══════════════════════════════════════════════════════════
+const ALL_CMDS = ['about','back','contact','help','home','ls','clear','project',
+                  'projects','skills','whoami','cat','cd','echo'];
+
+function exec(raw) {
+  const cmd  = raw.trim();
+  if (!cmd) return;
+
+  const parts = cmd.split(/\s+/);
+  const verb  = parts[0].toLowerCase();
+
+  cmdHistory.unshift(cmd);
+  historyIdx = -1;
+
+  if (SECTION_IDS.includes(verb)) {
+    navigate(verb, true, cmd);
+    return;
+  }
+
+  switch (verb) {
+    case 'cat':
+    case 'cd': {
+      const target = parts[1] ? parts[1].replace(/\/$/, '') : '';
+      if (SECTION_IDS.includes(target)) navigate(target, true, cmd);
+      else execErr(cmd, `${verb}: ${target}: no such file or directory`);
+      break;
+    }
+
+    case 'project': {
+      const n = parseInt(parts[1]);
+      if (isNaN(n) || n < 1 || n > P.projects.length) {
+        execErr(cmd, `project: usage: project <1–${P.projects.length}>`);
+      } else {
+        showProject(n - 1, cmd);
+      }
+      break;
+    }
+
+    case 'ls':
+    case 'dir':
+      appendCmd(cmd, [
+        () => addEl(el('div', 'l-blank')),
+        ...SECTION_IDS.filter(s => s !== 'home').map(s => () => {
+          const d = el('div', 'l-text');
+          d.style.color = SECTION_COLORS[s];
+          d.textContent = `${s}/`;
+          addEl(d);
+        }),
+        () => addEl(el('div', 'l-blank')),
+      ]);
+      break;
+
+    case 'whoami':
+      appendCmd(cmd, [
+        () => addEl(el('div', 'l-blank')),
+        ...kvPairs([
+          ['name', P.name, 'var(--text)'],
+          ['role', P.role, 'var(--green)'],
+          ['loc',  P.loc,  'var(--sky)'],
+        ]),
+        () => addEl(el('div', 'l-blank')),
+      ]);
+      break;
+
+    case 'help':
+      appendCmd(cmd, [
+        () => addEl(el('div', 'l-blank')),
+        () => {
+          const d = el('div', 'l-head', 'COMMANDS');
+          d.style.color = 'var(--sub0)'; d.style.fontSize = '0.8em';
+          d.style.letterSpacing = '0.15em';
+          addEl(d);
+        },
+        () => addEl(el('div', 'l-blank')),
+        ...kvPairs([
+          ['about',       'bio & background',              'var(--sub1)'],
+          ['skills',      'languages & tools',             'var(--sub1)'],
+          ['projects',    'list projects',                 'var(--sub1)'],
+          ['project N',   'expand project N details',      'var(--sub1)'],
+          ['contact',     'contact information',           'var(--sub1)'],
+          ['whoami',      'name & role',                   'var(--sub1)'],
+          ['back',        'go to previous section',        'var(--sub1)'],
+          ['ls',          'list all sections',             'var(--sub1)'],
+          ['clear',       'clear the screen',              'var(--sub1)'],
+          ['cat <sec>',   'open a section (e.g. cat about)','var(--sub1)'],
+        ]),
+        () => addEl(el('div', 'l-blank')),
+        () => addEl(el('div', 'l-text',
+          `<span style="color:var(--mauve)">← →</span>  navigate sections`)),
+        () => addEl(el('div', 'l-text',
+          `<span style="color:var(--mauve)">↑ ↓</span>  command history`)),
+        () => addEl(el('div', 'l-text',
+          `<span style="color:var(--mauve)">Tab</span>  autocomplete`)),
+        () => addEl(el('div', 'l-blank')),
+      ]);
+      break;
+
+    case 'back': {
+      const prev = navHistory.pop();
+      if (prev) navigate(prev, true, cmd, false);
+      else execErr(cmd, 'back: already at the beginning');
+      break;
+    }
+
+    case 'clear':
+      flushQueue();
+      outputEl.innerHTML = '';
+      navigate(currentSection, false, '', false);
+      break;
+
+    case 'echo':
+      appendCmd(cmd, [
+        () => addEl(el('div', 'l-text', esc(parts.slice(1).join(' ')))),
+        () => addEl(el('div', 'l-blank')),
+      ]);
+      break;
+
+    default:
+      execUnknown(cmd);
+  }
+}
+
+// Append prompt + cmd + builder fns to current output (no clear)
+function appendCmd(cmdText, builders) {
+  enq(() => addEl(el('div', 'l-blank')));
+  enq(() => addEl(promptEl()));
+  enq(() => addEl(cmdEl(cmdText)));
+  builders.forEach((fn, i) => enq(fn, i === 0 ? 0 : 16));
+}
+
+function execErr(cmd, msg) {
+  appendCmd(cmd, [
+    () => addEl(el('div', 'l-err', esc(msg))),
+    () => addEl(el('div', 'l-blank')),
+  ]);
+}
+
+function execUnknown(cmd) {
+  const verb = cmd.split(/\s+/)[0];
+  execErr(cmd, `command not found: ${esc(verb)}  (type help)`);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INPUT HANDLING
+// ═══════════════════════════════════════════════════════════
+let cmdHistory = [];
+let historyIdx = -1;
+
+inpEl.addEventListener('keydown', e => {
+  switch (e.key) {
+    case 'Enter':
+      e.preventDefault();
+      exec(inpEl.value);
+      inpEl.value = '';
+      break;
+
+    case 'ArrowUp':
+      e.preventDefault();
+      if (historyIdx < cmdHistory.length - 1) {
+        historyIdx++;
+        inpEl.value = cmdHistory[historyIdx];
+        // move cursor to end
+        setTimeout(() => inpEl.setSelectionRange(inpEl.value.length, inpEl.value.length), 0);
+      }
+      break;
+
+    case 'ArrowDown':
+      e.preventDefault();
+      if (historyIdx > 0) {
+        historyIdx--;
+        inpEl.value = cmdHistory[historyIdx];
+      } else {
+        historyIdx   = -1;
+        inpEl.value  = '';
+      }
+      break;
+
+    case 'ArrowLeft':
+      // only intercept when input is empty
+      if (inpEl.value === '') {
+        e.preventDefault();
+        const idx = SECTION_IDS.indexOf(currentSection);
+        if (idx > 0) navigate(SECTION_IDS[idx - 1]);
+      }
+      break;
+
+    case 'ArrowRight':
+      if (inpEl.value === '') {
+        e.preventDefault();
+        const idx = SECTION_IDS.indexOf(currentSection);
+        if (idx < SECTION_IDS.length - 1) navigate(SECTION_IDS[idx + 1]);
+      }
+      break;
+
+    case 'Tab':
+      e.preventDefault();
+      const partial = inpEl.value.toLowerCase();
+      if (!partial) break;
+      const match = ALL_CMDS.find(c => c.startsWith(partial) && c !== partial);
+      if (match) inpEl.value = match;
+      break;
+
+    case 'l':
+      if (e.ctrlKey) {
+        e.preventDefault();
+        flushQueue(); outputEl.innerHTML = '';
+        navigate(currentSection);
+      }
+      break;
+  }
+});
+
+// Clicking anywhere refocuses input
+document.addEventListener('click', () => inpEl.focus());
+document.addEventListener('keydown', e => {
+  if (document.activeElement !== inpEl && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    inpEl.focus();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════
+navigate('home');
+setTimeout(() => inpEl.focus(), 50);
+</script>
+</body>
+</html>
