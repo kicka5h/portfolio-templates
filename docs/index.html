@@ -251,6 +251,16 @@
       background: var(--accent); border-color: var(--accent); color: #fff;
     }
 
+    #dl-btn {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: var(--accent); border: 1px solid var(--accent);
+      color: #fff; padding: 0.28rem 0.9rem;
+      border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: opacity 0.2s; font-family: var(--font);
+    }
+    #dl-btn:hover { opacity: 0.85; }
+
     #frame { flex: 1; width: 100%; border: none; display: block; }
 
     /* ─── Responsive ──────────────────────────────────────── */
@@ -284,6 +294,7 @@
     <div class="toolbar-sep"></div>
     <span id="current-name"></span>
     <div class="toolbar-pills" id="toolbar-pills"></div>
+    <button id="dl-btn">&#8595; Download</button>
   </div>
   <iframe id="frame" title="Template preview" allowfullscreen></iframe>
 </div>
@@ -446,14 +457,36 @@ const viewer      = document.getElementById('viewer');
 const frame       = document.getElementById('frame');
 const currentName = document.getElementById('current-name');
 const backBtn     = document.getElementById('back-btn');
+const dlBtn       = document.getElementById('dl-btn');
+
+let activeTemplate = null;
+
+dlBtn.addEventListener('click', async () => {
+  if (!activeTemplate) return;
+  const url = BASE_URL + activeTemplate.path;
+  try {
+    dlBtn.textContent = '…';
+    const res  = await fetch(url);
+    const html = await res.text();
+    const blob = new Blob([html], { type: 'text/html' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = activeTemplate.id + '.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } finally {
+    dlBtn.textContent = '↓ Download';
+  }
+});
 
 function openTemplate(id) {
   const t = TEMPLATES.find(t => t.id === id);
   if (!t?.available) return;
 
-  frame.src = BASE_URL + t.path;
+  activeTemplate  = t;
+  frame.src       = BASE_URL + t.path;
   currentName.textContent = t.name;
-  document.title = t.name + ' — Portfolio Templates';
+  document.title  = t.name + ' — Portfolio Templates';
 
   document.querySelectorAll('.toolbar-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.id === id);
