@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPACE PORTFOLIO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #00000A; overflow: hidden; }
+    canvas { display: block; }
+
+    #ui {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    /* scanline overlay */
+    #ui::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px, transparent 2px,
+        rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 3px
+      );
+      pointer-events: none;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 22px; font-size: 10px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+      color: #fff; z-index: 2;
+    }
+    #hud-lives { color: #00FF41; letter-spacing: 5px; }
+    #hud-wave  { color: #FFD700; }
+    #hud-score { color: #00FFFF; }
+
+    /* wave subtitle */
+    #wave-sub {
+      position: absolute; top: 46px; left: 0; right: 0;
+      text-align: center; font-size: 8px;
+      color: #2a2a2a; letter-spacing: 0.4em;
+      z-index: 2;
+    }
+
+    /* overlay */
+    #msg {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 2rem;
+      background: rgba(0,0,8,0.78);
+      z-index: 3;
+    }
+    #msg.hidden { display: none; }
+
+    .m-eye  { font-size: clamp(0.3rem,0.9vw,0.5rem); letter-spacing:0.3em; color:#444; margin-bottom:1em; }
+    .m-head { font-size: clamp(1rem,3.8vw,2.6rem); margin-bottom:0.55em; text-shadow:0 0 40px currentColor; }
+    .m-body { font-size: clamp(0.32rem,0.95vw,0.58rem); color:#888; line-height:2.6; margin-bottom:0.3em; }
+    .m-cta  { font-size: clamp(0.3rem,0.9vw,0.55rem); margin-top:1.8em; color:#fff; }
+    .blink  { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity:0; } }
+
+    /* bottom hint */
+    #hint {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      text-align: center; padding: 12px;
+      font-size: 7px; color: #333; letter-spacing: 0.1em;
+      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="hud">
+    <div id="hud-lives">♦ ♦ ♦</div>
+    <div id="hud-wave">SECTOR 1</div>
+    <div id="hud-score">000000</div>
+  </div>
+  <div id="wave-sub"></div>
+  <div id="msg"><!-- injected --></div>
+  <div id="hint">ARROWS: ROTATE + THRUST &nbsp;|&nbsp; SPACE: FIRE &nbsp;|&nbsp; FLY OFF TOP/BOTTOM EDGE TO CHANGE SECTION</div>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  PORTFOLIO DATA  —  customise below
+// ═══════════════════════════════════════════════════════
+const P = {
+  name:  'YOUR NAME',
+  title: 'FULL STACK DEV',
+  about: [
+    'I BUILD THINGS',
+    'FOR THE WEB.',
+    '',
+    '5 YRS EXPERIENCE',
+    'REACT · NODE · GO',
+  ],
+  skills: [
+    'JAVASCRIPT', 'TYPESCRIPT',
+    'REACT',      'NODE.JS',
+    'PYTHON',     'POSTGRESQL',
+    'DOCKER',     'AWS',
+  ],
+  projects: [
+    '> ORBIT CMS',
+    '  HEADLESS CMS IN GO',
+    '',
+    '> PIXEL FORGE',
+    '  BROWSER PIXEL EDITOR',
+    '',
+    '> NOVA API',
+    '  REST + GRAPHQL KIT',
+  ],
+  contact: [
+    'you@example.com',
+    'github.com/you',
+    'linkedin.com/in/you',
+  ],
+};
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+let W = 0, H = 0;
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════
+//  STARS
+// ═══════════════════════════════════════════════════════
+const STARS = Array.from({ length: 240 }, () => ({
+  rx: Math.random(), ry: Math.random(),
+  r:  Math.random() * 1.5 + 0.3,
+  b:  Math.random() * 0.55 + 0.3,
+  tw: Math.random() * Math.PI * 2,
+}));
+
+function drawStars(t) {
+  for (const s of STARS) {
+    const a = s.b * (0.6 + 0.4 * Math.sin(s.tw + t * 0.0007));
+    ctx.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`;
+    const sz = Math.max(1, s.r | 0);
+    ctx.fillRect(s.rx * W | 0, s.ry * H | 0, sz, sz);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  WAVE DEFINITIONS
+// ═══════════════════════════════════════════════════════
+function buildWaves() {
+  return [
+    {
+      id: 1, label: 'SECTOR 1', sub: 'IDENTITY', color: '#FFD700',
+      asteroids: 10, enemies: 0,
+      items: [
+        { text: P.name,  cx: 0.5, cy: 0.36, size: 52, color: '#FFD700' },
+        { text: P.title, cx: 0.5, cy: 0.54, size: 26, color: '#00FFFF' },
+      ],
+    },
+    {
+      id: 2, label: 'SECTOR 2', sub: 'SIGNAL', color: '#00FFFF',
+      asteroids: 9, enemies: 2,
+      items: [
+        { text: '// ABOUT', cx: 0.5, cy: 0.16, size: 28, color: '#FF69B4' },
+        ...P.about.map((line, i) => ({
+          text: line, cx: 0.5, cy: 0.30 + i * 0.096, size: 18, color: '#FFFFFF',
+        })),
+      ],
+    },
+    {
+      id: 3, label: 'SECTOR 3', sub: 'ARSENAL', color: '#FF69B4',
+      asteroids: 13, enemies: 3,
+      items: [
+        { text: '// SKILLS', cx: 0.5, cy: 0.13, size: 28, color: '#FF69B4' },
+        ...P.skills.map((s, i) => ({
+          text: s,
+          cx: i % 2 === 0 ? 0.27 : 0.73,
+          cy: 0.285 + Math.floor(i / 2) * 0.135,
+          size: 19, color: '#7FFF00',
+        })),
+      ],
+    },
+    {
+      id: 4, label: 'SECTOR 4', sub: 'ARTIFACTS', color: '#7FFF00',
+      asteroids: 15, enemies: 4,
+      items: [
+        { text: '// PROJECTS', cx: 0.5, cy: 0.10, size: 24, color: '#FF69B4' },
+        ...P.projects.map((line, i) => ({
+          text: line, cx: 0.2, cy: 0.225 + i * 0.082, size: 14, color: '#7FFF00',
+        })),
+      ],
+    },
+    {
+      id: 5, label: 'SECTOR 5', sub: 'CONTACT', color: '#FF8C00',
+      asteroids: 18, enemies: 5,
+      items: [
+        { text: '// CONTACT', cx: 0.5, cy: 0.25, size: 28, color: '#FF69B4' },
+        ...P.contact.map((line, i) => ({
+          text: line, cx: 0.5, cy: 0.42 + i * 0.14, size: 16, color: '#FF8C00',
+        })),
+      ],
+    },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════
+//  SECTION TEXT  —  drawn directly each frame
+// ═══════════════════════════════════════════════════════
+function drawSectionText(items) {
+  ctx.save();
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  for (const item of items) {
+    if (!item.text.trim()) continue;
+    ctx.font      = `${item.size}px 'Press Start 2P', monospace`;
+    // subtle glow
+    ctx.shadowColor = item.color;
+    ctx.shadowBlur  = 14;
+    ctx.fillStyle   = item.color;
+    ctx.fillText(item.text, item.cx * W, item.cy * H);
+  }
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════════════════════════
+let particles = [];
+
+function spawnExplosion(x, y, color, count = 20) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 1.2 + Math.random() * 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+      alpha: 1, r: 1 + Math.random() * 2.5,
+      color, decay: 0.018 + Math.random() * 0.018,
+    });
+  }
+}
+
+function updateParticles() {
+  let i = particles.length;
+  while (i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy    += 0.055;
+    p.alpha -= p.decay;
+    if (p.alpha <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    if (p.alpha < 0.03) continue;
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle   = p.color;
+    const sz = Math.max(1, (p.r * 2) | 0);
+    ctx.fillRect(p.x | 0, p.y | 0, sz, sz);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ═══════════════════════════════════════════════════════
+//  PLAYER
+// ═══════════════════════════════════════════════════════
+const PLAYER_R   = 13;
+const THRUST_ACC = 0.24;
+const ROT_SPD    = 0.054;
+const FRICTION   = 0.982;
+const FIRE_RATE  = 16;
+const BULLET_SPD = 11;
+
+const player = {
+  x: 0, y: 0, vx: 0, vy: 0,
+  angle: -Math.PI / 2,
+  lives: 3, invincible: 0,
+  fireCooldown: 0, dead: false,
+};
+
+function resetPlayer() {
+  player.x = W / 2; player.y = H / 2;
+  player.vx = 0;    player.vy = 0;
+  player.angle      = -Math.PI / 2;
+  player.invincible = 180;
+  player.dead       = false;
+}
+
+function drawPlayer(thrust) {
+  if (player.dead) return;
+  if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  // +π/2 offset: ship is drawn nose-up in local space, physics uses standard
+  // angle-right convention, so we rotate the canvas to compensate.
+  ctx.rotate(player.angle + Math.PI / 2);
+  ctx.strokeStyle = '#00FF41';
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = 'miter';
+  ctx.shadowColor = '#00FF41';
+  ctx.shadowBlur  = 10;
+
+  ctx.beginPath();
+  ctx.moveTo(0,  -15);  // nose
+  ctx.lineTo(-10, 13);  // left wing
+  ctx.lineTo(-5,   8);  // left notch
+  ctx.lineTo(5,    8);  // right notch
+  ctx.lineTo(10,  13);  // right wing
+  ctx.closePath();
+  ctx.stroke();
+
+  // cockpit window
+  ctx.strokeStyle = 'rgba(0,255,65,0.4)';
+  ctx.beginPath();
+  ctx.moveTo(0, -7); ctx.lineTo(-3, 3); ctx.lineTo(3, 3);
+  ctx.closePath();
+  ctx.stroke();
+
+  // thruster flame
+  if (thrust && Math.random() > 0.25) {
+    ctx.strokeStyle = Math.random() > 0.5 ? '#FF6600' : '#FFD700';
+    ctx.shadowColor = '#FF6600';
+    ctx.shadowBlur  = 16;
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 8);
+    ctx.lineTo(0, 22 + Math.random() * 11);
+    ctx.lineTo(4, 8);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+//  BULLETS
+// ═══════════════════════════════════════════════════════
+let bullets      = [];
+let enemyBullets = [];
+
+function fireBullet() {
+  if (player.fireCooldown > 0 || player.dead) return;
+  player.fireCooldown = FIRE_RATE;
+  bullets.push({
+    x:  player.x + Math.cos(player.angle) * 16,
+    y:  player.y + Math.sin(player.angle) * 16,
+    vx: Math.cos(player.angle) * BULLET_SPD + player.vx,
+    vy: Math.sin(player.angle) * BULLET_SPD + player.vy,
+    life: 70,
+  });
+}
+
+function drawBullets() {
+  ctx.shadowBlur  = 10;
+  ctx.fillStyle   = '#FFFF00';
+  ctx.shadowColor = '#FFFF00';
+  for (const b of bullets)      ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+  ctx.fillStyle   = '#FF3A3A';
+  ctx.shadowColor = '#FF3A3A';
+  for (const b of enemyBullets) ctx.fillRect(b.x - 2, b.y - 2, 4, 4);
+  ctx.shadowBlur  = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+//  ASTEROIDS
+// ═══════════════════════════════════════════════════════
+let asteroids = [];
+
+function makeAsteroidShape(size) {
+  const n   = 7 + Math.floor(Math.random() * 5);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const r = size * (0.6 + Math.random() * 0.4);
+    pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+  }
+  return pts;
+}
+
+function spawnAsteroid(size, nearX, nearY) {
+  // if no near position given, spawn from a random edge
+  let x, y;
+  if (nearX !== undefined) {
+    x = nearX + (Math.random() - 0.5) * 28;
+    y = nearY + (Math.random() - 0.5) * 28;
+  } else {
+    const edge = Math.floor(Math.random() * 4);
+    if      (edge === 0) { x = Math.random() * W; y = -size; }
+    else if (edge === 1) { x = W + size;           y = Math.random() * H; }
+    else if (edge === 2) { x = Math.random() * W; y = H + size; }
+    else                 { x = -size;              y = Math.random() * H; }
+  }
+  const tx  = W * (0.2 + Math.random() * 0.6);
+  const ty  = H * (0.2 + Math.random() * 0.6);
+  const ang = Math.atan2(ty - y, tx - x);
+  const spd = (0.5 + Math.random() * 1.1) * (65 / size);
+  return {
+    x, y, size,
+    vx: Math.cos(ang) * spd,
+    vy: Math.sin(ang) * spd,
+    rot: 0, rotSpd: (Math.random() - 0.5) * 0.03,
+    pts: makeAsteroidShape(size),
+    radius: size * 0.78,
+  };
+}
+
+function drawAsteroids() {
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth   = 2;
+  ctx.shadowColor = '#555';
+  ctx.shadowBlur  = 4;
+  for (const a of asteroids) {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.rot);
+    ctx.beginPath();
+    a.pts.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+}
+
+// ═══════════════════════════════════════════════════════
+//  ENEMIES
+// ═══════════════════════════════════════════════════════
+let enemies = [];
+
+function spawnEnemy() {
+  const edge = Math.floor(Math.random() * 4);
+  let x, y;
+  if      (edge === 0) { x = Math.random() * W; y = -32; }
+  else if (edge === 1) { x = W + 32;             y = Math.random() * H; }
+  else if (edge === 2) { x = Math.random() * W; y = H + 32; }
+  else                 { x = -32;                y = Math.random() * H; }
+  return {
+    x, y, vx: 0, vy: 0, angle: 0, hp: 2,
+    radius: 14, fireTimer: 0,
+    fireCooldown: 75 + Math.floor(Math.random() * 55),
+  };
+}
+
+function drawEnemy(e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  ctx.rotate(e.angle);
+  ctx.strokeStyle = e.hp === 1 ? '#FF8C00' : '#FF3A3A';
+  ctx.lineWidth   = 2;
+  ctx.shadowColor = '#FF3A3A';
+  ctx.shadowBlur  = 10;
+
+  // hexagonal hull
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+    i ? ctx.lineTo(Math.cos(a) * 13, Math.sin(a) * 13)
+      : ctx.moveTo(Math.cos(a) * 13, Math.sin(a) * 13);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  // inner diamond
+  ctx.beginPath();
+  ctx.moveTo(0, -6); ctx.lineTo(5, 0);
+  ctx.lineTo(0,  6); ctx.lineTo(-5, 0);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function fireEnemyBullet(e, tx, ty, spread = 0.32) {
+  const ang = Math.atan2(ty - e.y, tx - e.x) + (Math.random() - 0.5) * spread;
+  enemyBullets.push({
+    x: e.x, y: e.y,
+    vx: Math.cos(ang) * 5, vy: Math.sin(ang) * 5,
+    life: 130,
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════════
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); handleSpace(); }
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+let state         = 'TITLE';  // TITLE | PLAYING | RESPAWN | GAME_OVER | COMPLETE
+let waveIndex     = 0;
+let score         = 0;
+let respawnTimer  = 0;
+let sectionFlash  = 0;        // 0-1, white flash when crossing a screen edge
+let fontsReady    = false;
+let WAVES         = [];
+
+const msgEl     = document.getElementById('msg');
+const hudWaveEl = document.getElementById('hud-wave');
+const hudScrEl  = document.getElementById('hud-score');
+const hudLivEl  = document.getElementById('hud-lives');
+const waveSubEl = document.getElementById('wave-sub');
+
+function showMsg(html) { msgEl.innerHTML = html; msgEl.classList.remove('hidden'); }
+function hideMsg()     { msgEl.classList.add('hidden'); }
+
+function updateHUD() {
+  const wave = WAVES[waveIndex];
+  hudWaveEl.textContent = wave ? wave.label : '';
+  hudScrEl.textContent  = String(score).padStart(6, '0');
+  hudLivEl.textContent  = '♦ '.repeat(Math.max(0, player.lives)).trim() || '---';
+  if (wave) waveSubEl.textContent = wave.sub;
+}
+
+function dist2(ax, ay, bx, by) {
+  const dx = ax - bx, dy = ay - by;
+  return dx * dx + dy * dy;
+}
+
+function wrap(v, max) { return ((v % max) + max) % max; }
+
+// ── State machine ────────────────────────────────────────
+function handleSpace() {
+  if (!fontsReady) return;
+  if (state === 'TITLE'     || state === 'GAME_OVER' || state === 'COMPLETE') startGame();
+}
+
+function startGame() {
+  WAVES        = buildWaves();
+  waveIndex    = 0;
+  score        = 0;
+  player.lives = 3;
+  resetPlayer();
+  startWave();
+}
+
+function startWave() {
+  loadSectionContent();
+  bullets = []; enemyBullets = []; particles = [];
+  state = 'PLAYING';
+  hideMsg();
+  updateHUD();
+}
+
+// Populate the current section's asteroids and enemies.
+function loadSectionContent() {
+  const wave = WAVES[waveIndex];
+
+  asteroids = [];
+  for (let i = 0; i < wave.asteroids; i++)
+    asteroids.push(spawnAsteroid(32 + Math.random() * 22));
+
+  enemies = [];
+  for (let i = 0; i < wave.enemies; i++)
+    enemies.push(spawnEnemy());
+}
+
+// Called when player crosses the top (dir=+1) or bottom (dir=-1) edge.
+function changeSection(dir) {
+  const newIdx = waveIndex + dir;
+
+  if (newIdx < 0) {
+    // Already at first sector — bounce back
+    player.y  = 12;
+    player.vy = Math.abs(player.vy) * 0.4;
+    return;
+  }
+
+  if (newIdx >= WAVES.length) {
+    // Flew past the last sector → mission complete
+    state = 'COMPLETE';
+    showMsg(`
+      <div class="m-eye">ALL SECTORS CLEARED</div>
+      <div class="m-head" style="color:#FFD700">MISSION COMPLETE</div>
+      <div class="m-body" style="line-height:2.8">
+        ${P.name}<br>
+        ${P.contact[0]}<br>
+        ${P.contact[1]}
+      </div>
+      <div class="m-body">FINAL SCORE: ${String(score).padStart(6, '0')}</div>
+      <div class="m-cta blink">PRESS SPACE TO PLAY AGAIN</div>
+    `);
+    return;
+  }
+
+  waveIndex = newIdx;
+  // Reposition player at the opposite edge with dampened velocity
+  player.y          = dir > 0 ? H - 24 : 24;
+  player.vy        *= 0.35;
+  player.invincible = 60;  // brief grace period on entry
+  sectionFlash      = 1.0;
+
+  bullets      = [];
+  enemyBullets = [];
+  loadSectionContent();
+  updateHUD();
+}
+
+function triggerDeath() {
+  if (player.invincible > 0 || player.dead) return;
+  spawnExplosion(player.x, player.y, '#00FF41', 32);
+  player.dead = true;
+  player.lives--;
+
+  if (player.lives <= 0) {
+    state = 'GAME_OVER';
+    showMsg(`
+      <div class="m-eye">MISSION FAILED</div>
+      <div class="m-head" style="color:#FF3A3A">GAME OVER</div>
+      <div class="m-body">SCORE: ${String(score).padStart(6, '0')}</div>
+      <div class="m-cta blink">PRESS SPACE TO RETRY</div>
+    `);
+  } else {
+    state        = 'RESPAWN';
+    respawnTimer = 130;
+    showMsg(`
+      <div class="m-eye">SHIP DESTROYED</div>
+      <div class="m-head" style="color:#FF3A3A">DOWN</div>
+      <div class="m-body">${player.lives} SHIP${player.lives !== 1 ? 'S' : ''} REMAINING</div>
+    `);
+  }
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════
+//  UPDATE
+// ═══════════════════════════════════════════════════════
+function update() {
+  if (state === 'RESPAWN') {
+    updateParticles();
+    if (--respawnTimer <= 0) { resetPlayer(); hideMsg(); state = 'PLAYING'; }
+    return;
+  }
+
+  if (state !== 'PLAYING') return;
+
+  // ── Player movement ──────────────────────────────
+  const thrust = keys['ArrowUp'] || keys['KeyW'];
+  if (keys['ArrowLeft']  || keys['KeyA']) player.angle -= ROT_SPD;
+  if (keys['ArrowRight'] || keys['KeyD']) player.angle += ROT_SPD;
+  if (thrust) {
+    player.vx += Math.cos(player.angle) * THRUST_ACC;
+    player.vy += Math.sin(player.angle) * THRUST_ACC;
+  }
+  player.vx *= FRICTION; player.vy *= FRICTION;
+  const spd = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+  if (spd > 9) { player.vx = player.vx / spd * 9; player.vy = player.vy / spd * 9; }
+  player.x = wrap(player.x + player.vx, W);
+  const newY = player.y + player.vy;
+  if (newY < -PLAYER_R) {
+    changeSection(+1);   // flew off top → next section
+  } else if (newY > H + PLAYER_R) {
+    changeSection(-1);   // flew off bottom → previous section
+  } else {
+    player.y = newY;
+  }
+
+  if (keys['Space']) fireBullet();
+  if (player.fireCooldown > 0) player.fireCooldown--;
+  if (player.invincible  > 0) player.invincible--;
+
+  // ── Move bullets ────────────────────────────────
+  for (const b of bullets) {
+    b.x = wrap(b.x + b.vx, W);
+    b.y = wrap(b.y + b.vy, H);
+    b.life--;
+  }
+  for (const b of enemyBullets) {
+    b.x += b.vx; b.y += b.vy; b.life--;
+  }
+
+  // ── Move asteroids ───────────────────────────────
+  for (const a of asteroids) {
+    a.x   = wrap(a.x + a.vx, W);
+    a.y   = wrap(a.y + a.vy, H);
+    a.rot += a.rotSpd;
+  }
+
+  // ── Move enemies ─────────────────────────────────
+  for (const e of enemies) {
+    const ea = Math.atan2(player.y - e.y, player.x - e.x);
+    e.vx += Math.cos(ea) * 0.042;
+    e.vy += Math.sin(ea) * 0.042;
+    const espd = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
+    if (espd > 2.2) { e.vx = e.vx / espd * 2.2; e.vy = e.vy / espd * 2.2; }
+    e.x     = wrap(e.x + e.vx, W);
+    e.y     = wrap(e.y + e.vy, H);
+    e.angle = ea;
+
+    e.fireTimer++;
+    if (e.fireTimer >= e.fireCooldown && !player.dead) {
+      fireEnemyBullet(e, player.x, player.y);
+      e.fireTimer    = 0;
+      e.fireCooldown = 70 + Math.floor(Math.random() * 55);
+    }
+  }
+
+  // ── Collision detection ──────────────────────────
+  const deadBullets      = new Set();
+  const deadAsteroidIdxs = new Set();
+  const deadEnemyIdxs    = new Set();
+  const deadEBullets     = new Set();
+
+  // Player bullets vs asteroids
+  bulletAsteroidLoop:
+  for (let bi = 0; bi < bullets.length; bi++) {
+    if (bullets[bi].life <= 0) { deadBullets.add(bi); continue; }
+    const b = bullets[bi];
+    for (let ai = 0; ai < asteroids.length; ai++) {
+      if (deadAsteroidIdxs.has(ai)) continue;
+      const a = asteroids[ai];
+      if (dist2(b.x, b.y, a.x, a.y) < a.radius * a.radius) {
+        deadBullets.add(bi);
+        deadAsteroidIdxs.add(ai);
+        spawnExplosion(b.x, b.y, '#FFFF00', 6);
+        score += 100;
+        continue bulletAsteroidLoop;
+      }
+    }
+  }
+
+  // Player bullets vs enemies
+  bulletEnemyLoop:
+  for (let bi = 0; bi < bullets.length; bi++) {
+    if (deadBullets.has(bi) || bullets[bi].life <= 0) continue;
+    const b = bullets[bi];
+    for (let ei = 0; ei < enemies.length; ei++) {
+      if (deadEnemyIdxs.has(ei)) continue;
+      const e = enemies[ei];
+      if (dist2(b.x, b.y, e.x, e.y) < e.radius * e.radius) {
+        deadBullets.add(bi);
+        e.hp--;
+        spawnExplosion(b.x, b.y, '#FF3A3A', 8);
+        if (e.hp <= 0) {
+          spawnExplosion(e.x, e.y, '#FF3A3A', 28);
+          deadEnemyIdxs.add(ei);
+          score += 250;
+        }
+        continue bulletEnemyLoop;
+      }
+    }
+  }
+
+  // Enemy bullets vs player
+  for (let bi = 0; bi < enemyBullets.length; bi++) {
+    const b = enemyBullets[bi];
+    if (b.life <= 0) { deadEBullets.add(bi); continue; }
+    if (!player.dead && dist2(b.x, b.y, player.x, player.y) < PLAYER_R * PLAYER_R) {
+      deadEBullets.add(bi);
+      triggerDeath();
+    }
+  }
+
+  // Asteroids vs player
+  if (!player.dead && player.invincible === 0) {
+    for (const a of asteroids) {
+      if (dist2(a.x, a.y, player.x, player.y) < (a.radius + PLAYER_R) ** 2) {
+        triggerDeath(); break;
+      }
+    }
+    if (!player.dead) {
+      for (const e of enemies) {
+        if (dist2(e.x, e.y, player.x, player.y) < (e.radius + PLAYER_R) ** 2) {
+          triggerDeath(); break;
+        }
+      }
+    }
+  }
+
+  // ── Apply asteroid splits (batch, no index corruption) ──
+  const toSplit = [];
+  // Iterate in reverse so we can splice safely, but we'll collect first
+  const sortedAstIdx = [...deadAsteroidIdxs].sort((a, b) => b - a);
+  for (const ai of sortedAstIdx) {
+    toSplit.push({ ...asteroids[ai] }); // shallow copy for position/size
+    asteroids.splice(ai, 1);
+  }
+  for (const a of toSplit) {
+    spawnExplosion(a.x, a.y, '#999', 14);
+    if (a.size > 22) {
+      for (let i = 0; i < 2; i++) {
+        asteroids.push(spawnAsteroid(a.size / 2, a.x, a.y));
+      }
+    }
+  }
+
+  // ── Clean up dead objects ────────────────────────
+  bullets      = bullets.filter((_, i)      => !deadBullets.has(i));
+  enemies      = enemies.filter((_, i)      => !deadEnemyIdxs.has(i));
+  enemyBullets = enemyBullets.filter((_, i) => !deadEBullets.has(i));
+
+  if (sectionFlash > 0) sectionFlash -= 0.04;
+
+  updateParticles();
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAW
+// ═══════════════════════════════════════════════════════
+function draw(t) {
+  ctx.fillStyle = '#00000A';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStars(t);
+
+  // In non-play states just show bg stars + large dim asteroid
+  if (state === 'TITLE' || state === 'GAME_OVER' || state === 'COMPLETE') {
+    ctx.save();
+    ctx.translate(W * 0.12, H * 0.82);
+    ctx.rotate(t * 0.00035);
+    ctx.strokeStyle = 'rgba(90,90,90,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    [0,1,2,3,4,5,6,7].forEach((_, i, a) => {
+      const ang = (i / a.length) * Math.PI * 2;
+      const r   = 68 * (0.65 + (i % 3 === 0 ? 0.35 : 0.1));
+      i ? ctx.lineTo(Math.cos(ang) * r, Math.sin(ang) * r)
+        : ctx.moveTo(Math.cos(ang) * r, Math.sin(ang) * r);
+    });
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  drawSectionText(WAVES[waveIndex].items);
+  drawParticles();
+  drawAsteroids();
+  for (const e of enemies) drawEnemy(e);
+  drawBullets();
+  drawPlayer(keys['ArrowUp'] || keys['KeyW']);
+
+  // ── Section nav hints at screen edges ────────────
+  ctx.save();
+  ctx.font      = "7px 'Press Start 2P', monospace";
+  ctx.textAlign = 'center';
+  if (waveIndex < WAVES.length - 1) {
+    const next = WAVES[waveIndex + 1];
+    ctx.fillStyle = `rgba(255,255,255,${0.12 + 0.08 * Math.sin(t * 0.003)})`;
+    ctx.fillText(`▲  FLY UP FOR: ${next.sub}  ▲`, W / 2, 68);
+  } else {
+    ctx.fillStyle = `rgba(255,215,0,${0.14 + 0.08 * Math.sin(t * 0.003)})`;
+    ctx.fillText('▲  MISSION COMPLETE AHEAD  ▲', W / 2, 68);
+  }
+  if (waveIndex > 0) {
+    const prev = WAVES[waveIndex - 1];
+    ctx.fillStyle = `rgba(255,255,255,${0.12 + 0.08 * Math.sin(t * 0.003 + 1)})`;
+    ctx.fillText(`▼  ${prev.sub} BELOW  ▼`, W / 2, H - 16);
+  }
+  ctx.restore();
+
+  // ── Section transition flash ──────────────────────
+  if (sectionFlash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${sectionFlash * 0.55})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════════════
+function loop(t) {
+  update();
+  draw(t);
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════
+WAVES = buildWaves();
+document.fonts.ready.then(() => { fontsReady = true; });
+
+showMsg(`
+  <div class="m-eye">INTERACTIVE PORTFOLIO</div>
+  <div class="m-head" style="color:#FFD700">SPACE&nbsp;PORTFOLIO</div>
+  <div class="m-body" style="color:#00FFFF; margin: 0.4em 0 1.4em">
+    NAVIGATE &nbsp;·&nbsp; DISCOVER &nbsp;·&nbsp; DESTROY
+  </div>
+  <div class="m-body" style="line-height:3">
+    ARROWS &nbsp;ROTATE + THRUST<br>
+    SPACE &nbsp;&nbsp;FIRE<br>
+    FLY OFF TOP EDGE → NEXT SECTION<br>
+    FLY OFF BOTTOM EDGE → PREV SECTION
+  </div>
+  <div class="m-cta blink" style="margin-top:2.4em">PRESS SPACE TO LAUNCH</div>
+`);
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
