@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Name — Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #faf8f4;
+      --sidebar-bg: #f2ece2;
+      --surface:    #eee7db;
+      --border:     #ddd5c8;
+      --text:       #2a2018;
+      --muted:      #7d6e62;
+      --faint:      #a8998d;
+      --accent:     #8b6f4e;
+      --accent-h:   #6e5438;
+      --tag-bg:     #e8e0d4;
+      --serif:      'Playfair Display', Georgia, serif;
+      --sans:       'Inter', system-ui, sans-serif;
+      --sidebar-w:  300px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-h); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* ─── Layout ──────────────────────────────────────────── */
+    #layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar ─────────────────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: 3rem 2rem;
+    }
+
+    #sidebar::-webkit-scrollbar { display: none; }
+
+    .sidebar-name {
+      font-family: var(--serif);
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.35rem;
+    }
+
+    .sidebar-role {
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .sidebar-tagline {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.6;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.75rem;
+    }
+
+    /* Nav */
+    nav { flex: 1; }
+
+    nav ul { list-style: none; display: flex; flex-direction: column; gap: 0.15rem; }
+
+    nav a {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      border-left: 2px solid transparent;
+      transition: color 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    nav a:hover { color: var(--text); background: var(--surface); }
+
+    nav a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--surface);
+    }
+
+    /* Social links */
+    .sidebar-socials {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      padding-top: 1.75rem;
+      border-top: 1px solid var(--border);
+      margin-top: 1.75rem;
+    }
+
+    .social-link {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .social-link:hover { color: var(--accent); text-decoration: none; }
+
+    /* ─── Main content ────────────────────────────────────── */
+    #content {
+      flex: 1;
+      padding: 5rem 4rem;
+      max-width: 760px;
+    }
+
+    section {
+      margin-bottom: 5.5rem;
+      scroll-margin-top: 3rem;
+    }
+
+    /* ─── Section heading ─────────────────────────────────── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 2.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      margin-bottom: 1rem;
+      position: relative;
+      padding-bottom: 1rem;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 40px; height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ─── About ───────────────────────────────────────────── */
+    .about-body p {
+      color: var(--muted);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .about-body p:last-child { margin-bottom: 0; }
+
+    .about-body strong { color: var(--text); font-weight: 600; }
+
+    /* ─── Skills ──────────────────────────────────────────── */
+    .skills-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2rem;
+    }
+
+    .skill-group-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--faint);
+      margin-bottom: 0.75rem;
+    }
+
+    .skill-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .skill-list li {
+      font-size: 0.88rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .skill-list li::before {
+      content: '';
+      display: block;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ─── Projects ────────────────────────────────────────── */
+    .projects-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .project-card {
+      background: var(--sidebar-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.6rem;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    .project-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 28px rgba(139,111,78,0.1);
+      transform: translateY(-2px);
+    }
+
+    .project-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .project-name {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .project-links {
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .project-link {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .project-link:hover { color: var(--accent); text-decoration: none; }
+
+    .project-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      background: var(--tag-bg);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    /* ─── Experience ──────────────────────────────────────── */
+    .exp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .exp-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.25rem 2rem;
+      align-items: start;
+    }
+
+    .exp-role {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .exp-date {
+      font-size: 0.78rem;
+      color: var(--faint);
+      white-space: nowrap;
+      padding-top: 0.15rem;
+    }
+
+    .exp-company {
+      font-size: 0.82rem;
+      color: var(--accent);
+      font-weight: 500;
+      grid-column: 1;
+    }
+
+    .exp-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      line-height: 1.7;
+      grid-column: 1 / -1;
+    }
+
+    /* ─── Contact ─────────────────────────────────────────── */
+    .contact-intro {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+      max-width: 52ch;
+    }
+
+    .contact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .contact-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--faint);
+      min-width: 7rem;
+    }
+
+    .contact-value {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .contact-value a { color: var(--text); }
+    .contact-value a:hover { color: var(--accent); }
+
+    /* ─── Footer ──────────────────────────────────────────── */
+    #content-footer {
+      font-size: 0.78rem;
+      color: var(--faint);
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ─── Mobile ──────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      #layout { flex-direction: column; }
+
+      #sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        padding: 2rem 1.5rem 1.5rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      nav ul { flex-direction: row; flex-wrap: wrap; gap: 0.25rem; }
+      nav a  { padding: 0.3rem 0.6rem; }
+
+      .sidebar-socials { margin-top: 1.25rem; padding-top: 1.25rem; }
+
+      #content { padding: 2.5rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="layout">
+
+  <!-- ─── Sidebar ─────────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sidebar-name">Your Name</div>
+    <div class="sidebar-role">Full Stack Developer</div>
+    <div class="sidebar-tagline">
+      Building thoughtful software for the web. Based in San Francisco.
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="#about"      class="nav-link">About</a></li>
+        <li><a href="#experience" class="nav-link">Experience</a></li>
+        <li><a href="#skills"     class="nav-link">Skills</a></li>
+        <li><a href="#projects"   class="nav-link">Projects</a></li>
+        <li><a href="#contact"    class="nav-link">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-socials">
+      <a class="social-link" href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+      <a class="social-link" href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="social-link" href="mailto:you@example.com">Email</a>
+      <a class="social-link" href="/resume.pdf" target="_blank" rel="noopener">Résumé</a>
+    </div>
+  </aside>
+
+  <!-- ─── Main content ──────────────────────────────────────── -->
+  <main id="content">
+
+    <!-- About -->
+    <section id="about">
+      <div class="section-label">Introduction</div>
+      <h2 class="section-title">About Me</h2>
+      <div class="about-body">
+        <p>
+          I'm a full stack developer with <strong>five years of experience</strong> building
+          products that sit at the intersection of clean engineering and thoughtful design.
+          I care as much about the code behind the curtain as the experience in front of it.
+        </p>
+        <p>
+          My work spans from early-stage startups to mid-size product teams. I'm at my best
+          when given a hard problem, a good team, and the space to think carefully before
+          reaching for the keyboard.
+        </p>
+        <p>
+          Outside of work I write, read, and spend too much time on long walks thinking
+          about things that could probably be solved with a spreadsheet.
+        </p>
+      </div>
+    </section>
+
+    <!-- Experience -->
+    <section id="experience">
+      <div class="section-label">Work History</div>
+      <h2 class="section-title">Experience</h2>
+      <div class="exp-list">
+
+        <div class="exp-item">
+          <div class="exp-role">Senior Software Engineer</div>
+          <div class="exp-date">2022 — Present</div>
+          <div class="exp-company">Acme Corp</div>
+          <div class="exp-desc">
+            Led the rebuild of the core billing platform, reducing payment failures by 34%.
+            Mentored a team of four engineers and drove adoption of TypeScript across the
+            frontend codebase.
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="exp-role">Software Engineer</div>
+          <div class="exp-date">2020 — 2022</div>
+          <div class="exp-company">Bright Labs</div>
+          <div class="exp-desc">
+            Built and shipped three customer-facing features end to end. Owned the
+            notification system serving 200k daily active users and improved delivery
+            reliability from 91% to 99.4%.
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="exp-role">Junior Developer</div>
+          <div class="exp-date">2019 — 2020</div>
+          <div class="exp-company">Studio Nine</div>
+          <div class="exp-desc">
+            Contributed to client web projects across e-commerce and media. First professional
+            exposure to large-scale React applications and REST API design.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills">
+      <div class="section-label">Toolkit</div>
+      <h2 class="section-title">Skills</h2>
+      <div class="skills-groups">
+        <div>
+          <div class="skill-group-title">Languages</div>
+          <ul class="skill-list">
+            <li>JavaScript</li>
+            <li>TypeScript</li>
+            <li>Python</li>
+            <li>Go</li>
+            <li>SQL</li>
+          </ul>
+        </div>
+        <div>
+          <div class="skill-group-title">Frameworks</div>
+          <ul class="skill-list">
+            <li>React</li>
+            <li>Next.js</li>
+            <li>Node.js</li>
+            <li>Express</li>
+            <li>FastAPI</li>
+          </ul>
+        </div>
+        <div>
+          <div class="skill-group-title">Tools & Infra</div>
+          <ul class="skill-list">
+            <li>PostgreSQL</li>
+            <li>Docker</li>
+            <li>AWS</li>
+            <li>GitHub Actions</li>
+            <li>Figma</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects">
+      <div class="section-label">Work</div>
+      <h2 class="section-title">Projects</h2>
+      <div class="projects-list">
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-name">Orbit CMS</div>
+            <div class="project-links">
+              <a class="project-link" href="https://github.com" target="_blank" rel="noopener">GitHub ↗</a>
+              <a class="project-link" href="https://example.com" target="_blank" rel="noopener">Live ↗</a>
+            </div>
+          </div>
+          <p class="project-desc">
+            A high-performance headless CMS with a REST and GraphQL API, multi-tenant
+            support, and a React admin interface. Used in production by three companies.
+          </p>
+          <div class="project-tags">
+            <span class="tag">Go</span>
+            <span class="tag">GraphQL</span>
+            <span class="tag">React</span>
+            <span class="tag">PostgreSQL</span>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-name">Pixel Forge</div>
+            <div class="project-links">
+              <a class="project-link" href="https://github.com" target="_blank" rel="noopener">GitHub ↗</a>
+              <a class="project-link" href="https://example.com" target="_blank" rel="noopener">Live ↗</a>
+            </div>
+          </div>
+          <p class="project-desc">
+            A full-featured pixel art editor that runs entirely in the browser. Supports
+            layers, animation frames, palette management, and PNG export — no installation
+            required.
+          </p>
+          <div class="project-tags">
+            <span class="tag">TypeScript</span>
+            <span class="tag">Canvas API</span>
+            <span class="tag">IndexedDB</span>
+          </div>
+        </div>
+
+        <div class="project-card">
+          <div class="project-header">
+            <div class="project-name">Nova API</div>
+            <div class="project-links">
+              <a class="project-link" href="https://github.com" target="_blank" rel="noopener">GitHub ↗</a>
+            </div>
+          </div>
+          <p class="project-desc">
+            An opinionated Node.js framework that generates REST and GraphQL endpoints from
+            a single schema definition. Zero boilerplate, full type safety throughout.
+          </p>
+          <div class="project-tags">
+            <span class="tag">Node.js</span>
+            <span class="tag">TypeScript</span>
+            <span class="tag">GraphQL</span>
+            <span class="tag">Zod</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact">
+      <div class="section-label">Get in Touch</div>
+      <h2 class="section-title">Contact</h2>
+      <p class="contact-intro">
+        I'm always open to interesting projects and conversations. Whether you have a
+        question, a role, or just want to say hello — my inbox is open.
+      </p>
+      <div class="contact-list">
+        <div class="contact-item">
+          <span class="contact-label">Email</span>
+          <span class="contact-value"><a href="mailto:you@example.com">you@example.com</a></span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-label">GitHub</span>
+          <span class="contact-value"><a href="https://github.com/you" target="_blank" rel="noopener">github.com/you</a></span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-label">LinkedIn</span>
+          <span class="contact-value"><a href="https://linkedin.com/in/you" target="_blank" rel="noopener">linkedin.com/in/you</a></span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-label">Twitter</span>
+          <span class="contact-value"><a href="https://twitter.com/you" target="_blank" rel="noopener">@you</a></span>
+        </div>
+      </div>
+    </section>
+
+    <footer id="content-footer">
+      Designed &amp; built by Your Name &nbsp;·&nbsp; <script>document.write(new Date().getFullYear())</script>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // ── Active nav link on scroll ────────────────────────────
+  const sections  = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+      });
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

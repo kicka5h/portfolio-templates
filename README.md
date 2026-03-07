@@ -17,14 +17,9 @@ Live gallery: **[kicka5h.github.io/portfolio-templates](https://kicka5h.github.i
 | **Fantasy Character** | TTRPG character sheet aesthetic — your skills as stats, your projects as quests. | Funny · Quirky · Playful |
 | **Arcade Game** | Pixel art Asteroids-style shooter where your portfolio *is* the game. Fly between sections, destroy enemies. | Game · Pixel Art · Interactive |
 | **Terminal Session** | Colorful terminal emulator with keyboard navigation, command history, tab-autocomplete, and a typewriter output effect. | Terminal · Colorful · Keyboard |
-
-### Coming Soon
-
-| Template | Description |
-|---|---|
-| **Minimal Dark** | Sleek dark-mode portfolio with subtle glow effects and refined micro-interactions. |
-| **Creative Bold** | High-contrast layout with oversized typography and an asymmetric project grid. |
-| **Clean Classic** | Timeless two-column layout with elegant serif typography and generous whitespace. |
+| **Clean Classic** | Timeless two-column layout with elegant serif typography, an earth-tone palette, and generous whitespace. | Classic · Serif · Elegant |
+| **Creative Bold** | High-contrast dark layout with oversized typography, a scrolling skill marquee, and an asymmetric project grid. | Bold · Creative · Grid |
+| **Minimal Dark** | Sleek dark-mode portfolio with a mouse spotlight, indigo glow effects, and refined micro-interactions. | Dark · Minimal · Glow |
 
 ---
 
@@ -77,7 +72,13 @@ docs/
 │   └── index.html
 ├── Arcade-Game/
 │   └── index.html
-└── Terminal-Session/
+├── Terminal-Session/
+│   └── index.html
+├── Clean-Classic/
+│   └── index.html
+├── Creative-Bold/
+│   └── index.html
+└── Minimal-Dark/
     └── index.html
 ```
 
